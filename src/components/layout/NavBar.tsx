@@ -21,6 +21,7 @@ export default function Navbar() {
     { title: 'Chăm Sóc Khách Hàng OA - ZNS', desc: 'Gửi tin nhắn Zalo tự động: xác nhận đơn, thông báo số dư tối ưu chi phí.', icon: 'fa-solid fa-comment-sms', href: '/zns' },
     { title: 'Thiết Kế Website Theo Yêu Cầu', desc: 'Website chuẩn SEO, giao diện độc quyền mượt mà và tối ưu chuyển đổi', icon: 'fa-solid fa-laptop-code', href: '/web' },
     { title: 'Hệ Thống Quản Trị CRM / ERP', desc: 'Số hóa toàn diện khách hàng, nhân sự và báo cáo tài chính nội bộ.', icon: 'fa-solid fa-chart-pie', href: '/erp' },
+    { title: 'Hạ Tầng Dữ Liệu & BI', desc: 'Xây dựng Data Warehouse, Data Lake và Dashboard điều hành thông minh.', icon: 'fa-solid fa-chart-line', href: '/data-bi' },
     { title: 'Giải Pháp Hợp Đồng Điện Tử', desc: 'Ký số từ xa, lưu trữ hợp đồng không giấy tờ và tự động hóa duyệt.', icon: 'fa-solid fa-file-signature', href: '/hop-dong-dien-tu' },
     { title: 'Hạ Tầng & Lưu Trữ Cloud', desc: 'Lưu trữ an toàn, tốc độ cao và bảo mật tối đa cho website/ứng dụng.', icon: 'fa-solid fa-server', href: '/ha-tang' },
     { title: 'Bản Quyền Phần Mềm', desc: 'Cung cấp key bản quyền. Bảo hành 1 đổi 1, kích hoạt trực tiếp từ Microsoft. ', icon: 'fa-solid fa-key', href: '/ban-quyen' },
@@ -234,6 +235,13 @@ export default function Navbar() {
                 className="p-2.5 bg-amber-50 text-amber-700 rounded-xl hover:bg-amber-100 transition-colors flex items-center gap-2"
               >
                 <i className="fa-solid fa-chart-pie text-amber-600"></i> Quản Trị ERP
+              </Link>
+              <Link
+                href="/data-bi"
+                onClick={closeMenu}
+                className="p-2.5 bg-violet-50 text-violet-700 rounded-xl hover:bg-violet-100 transition-colors flex items-center gap-2"
+              >
+                <i className="fa-solid fa-chart-line text-violet-600"></i> Hạ Tầng Dữ Liệu & BI
               </Link>
               <Link
                 href="/hop-dong-dien-tu"

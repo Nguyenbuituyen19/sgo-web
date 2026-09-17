@@ -118,7 +118,7 @@ export default function InfraServices() {
             <span className="text-xs text-slate-400">
               Gói Email chỉ từ <strong className="text-slate-700 font-semibold">99.000đ</strong>/tháng
             </span>
-            <a href="#register" className="text-sm font-semibold text-amber-600 hover:text-amber-700 inline-flex items-center gap-1">
+            <a href="/email" className="text-sm font-semibold text-amber-600 hover:text-amber-700 inline-flex items-center gap-1">
               Xem bảng giá Email <i className="fa-solid fa-chevron-right text-xs"></i>
             </a>
           </div>

@@ -18,7 +18,7 @@ export default function AboutCulture() {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           {/* Big Feature */}
           <div className="md:col-span-8 bg-slate-50 border border-slate-200/80 rounded-3xl p-6 sm:p-8 flex flex-col justify-between shadow-xs relative overflow-hidden min-h-[300px]">
-            <div className="relative z-10 max-w-lg">
+            <div className="relative z-10 max-w-3xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white text-blue-600 font-semibold text-xs mb-4 shadow-xs border border-slate-200/60">
                 <span className="material-symbols-outlined text-[16px]">psychology</span>
                 <span>Nghiên cứu &amp; Đổi mới sáng tạo</span>

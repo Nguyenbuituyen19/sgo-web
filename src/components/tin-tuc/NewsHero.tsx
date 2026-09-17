@@ -67,7 +67,7 @@ export default function NewsHero({
                 <span className="material-symbols-outlined absolute left-4 text-slate-400 text-[20px] pointer-events-none">
                   search
                 </span>
-                <input
+                <input  
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchInputChange}
