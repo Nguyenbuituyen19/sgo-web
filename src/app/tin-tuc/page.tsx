@@ -3,6 +3,9 @@ import Navbar from "@/components/layout/NavBar";
 import NewsMainContainer from "@/components/tin-tuc/NewsMainContainer";
 import Footer from "@/components/layout/Footer";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "Tin Tức & Xu Hướng Công Nghệ - SGODATA",
   description:

@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+
+interface CategoryItem {
+  name: string;
+  slug?: string;
+}
 
 interface NewsHeroProps {
+  categories?: CategoryItem[];
   selectedCategory?: string;
   onSelectCategory?: (category: string) => void;
   searchQuery?: string;
@@ -11,6 +16,7 @@ interface NewsHeroProps {
 }
 
 export default function NewsHero({
+  categories: propCategories,
   selectedCategory: propCategory,
   onSelectCategory,
   searchQuery: propQuery,
@@ -22,15 +28,13 @@ export default function NewsHero({
   const selectedCategory = propCategory !== undefined ? propCategory : internalCategory;
   const searchQuery = propQuery !== undefined ? propQuery : internalQuery;
 
-  const categories = [
-    "Tất cả",
-    "Hạ tầng Cloud",
-    "Dữ liệu & AI",
-    "Chuyển đổi số",
-    "Quản trị ERP/CRM",
-    "Bảo mật & Quy chuẩn",
-    "Xu hướng",
-  ];
+  // Chỉ hiển thị chuyên mục khi API có dữ liệu trả về, không dùng mock
+  const categories: CategoryItem[] =
+    propCategories && propCategories.length > 0
+      ? (propCategories.some((c) => c.name === "Tất cả")
+          ? propCategories
+          : [{ name: "Tất cả", slug: "" }, ...propCategories])
+      : [];
 
   const handleCategoryClick = (cat: string) => {
     setInternalCategory(cat);
@@ -45,7 +49,7 @@ export default function NewsHero({
 
   return (
     <>
-      <section className="w-full min-h-[600px] bg-slate-50 py-12 lg:py-16 border-b border-slate-200/80">
+      <section className="w-full min-h-[520px] bg-slate-50 py-12 lg:py-16 border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto gap-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/80 text-blue-900 font-semibold text-xs shadow-xs border border-blue-200/60">
@@ -76,25 +80,30 @@ export default function NewsHero({
                 />
               </div>
             </div>
+
             {/* CATEGORY PILLS */}
-            <div className="flex flex-wrap max-w-2xl items-center justify-center gap-2 pt-4">
-              {categories.map((cat) => {
-                const isActive = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => handleCategoryClick(cat)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-blue-600 text-white shadow-xs border border-blue-600"
-                        : "bg-white text-slate-600 hover:text-slate-950 border border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
-            </div>
+            {categories.length > 0 && (
+              <div className="flex flex-wrap max-w-2xl items-center justify-center gap-2 pt-4">
+                {categories.map((cat) => {
+                  const isActive =
+                    selectedCategory === cat.name ||
+                    (cat.slug && selectedCategory === cat.slug);
+                  return (
+                    <button
+                      key={cat.slug || cat.name}
+                      onClick={() => handleCategoryClick(cat.name)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                        isActive
+                          ? "bg-blue-600 text-white shadow-xs border border-blue-600"
+                          : "bg-white text-slate-600 hover:text-slate-950 border border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {cat.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>

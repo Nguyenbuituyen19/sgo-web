@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function TraceForm() {
   const [fullname, setFullname] = useState("");
@@ -9,11 +10,21 @@ export default function TraceForm() {
   const [industryCategory, setIndustryCategory] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "truy-xuat",
+      customerName: fullname,
+      phoneNumber: phone,
+      extraFields: {
+        company: company,
+        industryCategory: industryCategory,
+      },
+    });
+
+    if (res.success) {
       alert(
         "Đăng ký nhận tư vấn bản Demo thành công! Đội ngũ chuyên gia của SGO Việt Nam sẽ chủ động liên hệ lại với bạn trong thời gian sớm nhất."
       );
@@ -21,8 +32,10 @@ export default function TraceForm() {
       setPhone("");
       setCompany("");
       setIndustryCategory("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message);
+    }
+    setLoading(false);
   };
 
   return (

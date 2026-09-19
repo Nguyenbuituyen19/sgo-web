@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function ContractForm() {
   const [companyName, setCompanyName] = useState("");
@@ -8,19 +9,30 @@ export default function ContractForm() {
   const [demand, setDemand] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "hop-dong",
+      customerName: companyName,
+      phoneNumber: phone,
+      extraFields: {
+        demand: demand,
+      },
+    });
+
+    if (res.success) {
       alert(
         "Đăng ký dùng thử SGO e-Contract thành công! Chuyên viên giải pháp của SGO Việt Nam sẽ liên hệ để tạo môi trường test hệ thống cho bạn."
       );
       setCompanyName("");
       setPhone("");
       setDemand("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message);
+    }
+    setLoading(false);
   };
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function ErpForm() {
   const [fullname, setFullname] = useState("");
@@ -10,21 +11,34 @@ export default function ErpForm() {
   const [requirements, setRequirements] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "erp",
+      customerName: fullname,
+      phoneNumber: phone,
+      extraFields: {
+        company: company,
+        industry: industry,
+        requirements: requirements,
+      },
+    });
+
+    if (res.success) {
       alert(
-        "Gửi yêu cầu nhận tư vấn giải pháp SGO ERP thành công! Chuyên viên ERP của SGO Việt Nam sẽ liên hệ lại trong vòng 15 phút để hỗ trợ bạn."
+        "Gửi yêu cầu nhận tư vấn giải pháp SGO ERP thành công! Chuyên viên ERP của SGO Việt Nam sẽ liên hệ lại trong thời gian sớm nhất để hỗ trợ bạn."
       );
       setFullname("");
       setPhone("");
       setCompany("");
       setIndustry("");
       setRequirements("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message);
+    }
+    setLoading(false);
   };
 
   return (

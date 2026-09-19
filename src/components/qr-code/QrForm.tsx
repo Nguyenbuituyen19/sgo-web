@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent, ChangeEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function QrForm() {
   const [fullname, setFullname] = useState("");
@@ -38,24 +39,27 @@ export default function QrForm() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("fullname", fullname);
-      formData.append("phone", phone);
-      formData.append("email", email);
-      formData.append("qrUrl", qrUrl);
-
-      await fetch(scriptURL, {
-        method: "POST",
-        body: formData,
+      const res = await submitConsultation({
+        provisionCode: "qr-code",
+        customerName: fullname,
+        phoneNumber: phone,
+        email: email,
+        extraFields: {
+          qrUrl: qrUrl,
+        },
       });
 
-      alert(
-        "Đăng ký thành công! Hệ thống đang tiến hành tạo mã QR sạch cho bạn và Gửi lại qua Email hoặc Zalo đã được đăng ký! Cảm ơn bạn đã sử dụng dịch vụ của SGO Việt Nam"
-      );
-      setFullname("");
-      setPhone("");
-      setEmail("");
-      setQrUrl("");
+      if (res.success) {
+        alert(
+          "Đăng ký thành công! Hệ thống đang tiến hành tạo mã QR sạch cho bạn và Gửi lại qua Email hoặc Zalo đã được đăng ký! Cảm ơn bạn đã sử dụng dịch vụ của SGO Việt Nam"
+        );
+        setFullname("");
+        setPhone("");
+        setEmail("");
+        setQrUrl("");
+      } else {
+        alert(res.message);
+      }
     } catch (error: any) {
       console.error("Lỗi gửi dữ liệu:", error?.message);
       alert(

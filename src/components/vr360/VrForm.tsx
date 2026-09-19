@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function VrForm() {
   const [fullname, setFullname] = useState("");
@@ -9,20 +10,32 @@ export default function VrForm() {
   const [requirements, setRequirements] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "vr360",
+      customerName: fullname,
+      phoneNumber: phone,
+      extraFields: {
+        brandName: brandName,
+        requirements: requirements,
+      },
+    });
+
+    if (res.success) {
       alert(
-        "Gửi yêu cầu khảo sát thành công! Chuyên viên công nghệ VR360 của SGO Việt Nam sẽ liên hệ khảo sát và tư vấn cho bạn trong vòng 2 giờ làm việc."
+        "Gửi yêu cầu khảo sát thành công! Chuyên viên công nghệ VR360 của SGO Việt Nam sẽ liên hệ khảo sát và tư vấn cho bạn trong thời gian sớm nhất."
       );
       setFullname("");
       setPhone("");
       setBrandName("");
       setRequirements("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message);
+    }
+    setLoading(false);
   };
 
   return (

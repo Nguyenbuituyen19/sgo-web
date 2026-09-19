@@ -1,0 +1,80 @@
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
+
+const api = axios.create({
+  // Read .env.local FIRST and reuse the existing variable name if present.
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
+  timeout: 10_000,
+});
+
+// Strip undefined/null/empty-string params so optional filters can be passed inline
+api.interceptors.request.use((config) => {
+  if (config.params) {
+    config.params = Object.fromEntries(
+      Object.entries(config.params).filter(
+        ([, v]) => v !== undefined && v !== null && v !== ""
+      )
+    );
+  }
+  return config;
+});
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T | null;
+  message?: string;
+}
+
+/**
+ * Normalizes the backend's raw payloads and RFC 7807 problem-json errors:
+ * - 2xx -> { success: true, data }
+ * - 404 -> { success: true, data: null }  ("not found" is a valid state, not an error)
+ * - other -> { success: false, message }
+ */
+export async function request<T>(
+  config: AxiosRequestConfig
+): Promise<ApiResponse<T>> {
+  try {
+    const res = await api.request<T>(config);
+    return { success: true, data: res.data };
+  } catch (err) {
+    const axiosError = err as AxiosError<{ code?: string; detail?: string; message?: string }>;
+
+    if (axiosError.response?.status === 404) {
+      return { success: true, data: null };
+    }
+
+    const problem = axiosError.response?.data;
+    const message =
+      problem?.detail ||
+      problem?.message ||
+      axiosError.message ||
+      "Không thể kết nối tới máy chủ";
+
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        `[api] ${config.method?.toUpperCase()} ${config.url} failed:`,
+        problem?.code || axiosError.code || message
+      );
+    }
+
+    return { success: false, data: null, message };
+  }
+}
+
+// Example mutation helper — adjust the payload to the backend's request schema
+export interface SubmitExamplePayload {
+  fieldA: string;
+  fieldB: string;
+  email?: string;
+  extraFields?: Record<string, unknown>;
+}
+
+export async function submitExample(
+  payload: SubmitExamplePayload
+): Promise<ApiResponse<unknown>> {
+  return request({
+    method: "POST",
+    url: "/api/v1/example",
+    data: payload,
+  });
+}

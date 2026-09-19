@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function InfraForm() {
   const [fullname, setFullname] = useState("");
@@ -9,20 +10,32 @@ export default function InfraForm() {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "ha-tang",
+      customerName: fullname,
+      phoneNumber: phone,
+      extraFields: {
+        service: service,
+        description: description,
+      },
+    });
+
+    if (res.success) {
       alert(
-        "Cảm ơn bạn đã gửi yêu cầu tư vấn hạ tầng! Chuyên viên giải pháp của SGO Việt Nam sẽ liên hệ lại trong ít phút."
+        "Cảm ơn bạn đã gửi yêu cầu tư vấn hạ tầng! Chuyên viên giải pháp của SGO Việt Nam sẽ liên hệ lại trong thời gian sớm nhất."
       );
       setFullname("");
       setPhone("");
       setService("Đăng ký Tên miền / Đăng ký Hosting mới");
       setDescription("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message);
+    }
+    setLoading(false);
   };
 
   return (

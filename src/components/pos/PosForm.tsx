@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function PosForm() {
   const [ownerName, setOwnerName] = useState("");
@@ -9,11 +10,21 @@ export default function PosForm() {
   const [industry, setIndustry] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "pos",
+      customerName: ownerName,
+      phoneNumber: phone,
+      extraFields: {
+        storeName: storeName,
+        industry: industry,
+      },
+    });
+
+    if (res.success) {
       alert(
         "Kích hoạt tài khoản dùng thử 07 ngày thành công! Đội ngũ tư vấn SGO POS sẽ liên hệ hướng dẫn bạn trải nghiệm phần mềm."
       );
@@ -21,8 +32,10 @@ export default function PosForm() {
       setPhone("");
       setStoreName("");
       setIndustry("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message);
+    }
+    setLoading(false);
   };
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function ContactCard() {
   const [fullName, setFullName] = useState("");
@@ -11,7 +12,7 @@ export default function ContactCard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !phone || !email || !message) {
       alert("Vui lòng điền đầy đủ Họ tên, Số điện thoại, Email và Nội dung!");
@@ -19,15 +20,30 @@ export default function ContactCard() {
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    const res = await submitConsultation({
+      provisionCode: "contact",
+      customerName: fullName,
+      phoneNumber: phone,
+      email: email,
+      extraFields: {
+        subject: subject,
+        message: message,
+      },
+    });
+
+    setIsSubmitting(false);
+
+    if (res.success) {
       setSubmitSuccess(true);
       setFullName("");
       setPhone("");
       setEmail("");
       setSubject("");
       setMessage("");
-    }, 1000);
+    } else {
+      alert(res.message);
+    }
   };
 
   const hanoiOffice = {

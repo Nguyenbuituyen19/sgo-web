@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function WebForm() {
   const [fullname, setFullname] = useState("");
@@ -8,19 +9,30 @@ export default function WebForm() {
   const [businessField, setBusinessField] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "web",
+      customerName: fullname,
+      phoneNumber: phone,
+      extraFields: {
+        businessField: businessField,
+      },
+    });
+
+    if (res.success) {
       alert(
         "Gửi yêu cầu tư vấn thành công! Chuyên viên thiết kế của SGO Việt Nam sẽ liên hệ tổng hợp và gửi lại 3 mẫu giao diện đẹp nhất cho bạn."
       );
       setFullname("");
       setPhone("");
       setBusinessField("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message);
+    }
+    setLoading(false);
   };
 
   return (

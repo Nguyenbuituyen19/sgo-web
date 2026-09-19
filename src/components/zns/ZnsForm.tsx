@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function ZnsForm() {
   const [fullname, setFullname] = useState("");
@@ -9,11 +10,21 @@ export default function ZnsForm() {
   const [oaStatus, setOaStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "zns",
+      customerName: fullname,
+      phoneNumber: phone,
+      extraFields: {
+        company: company,
+        oaStatus: oaStatus,
+      },
+    });
+
+    if (res.success) {
       alert(
         "Gửi yêu cầu nhận tư vấn Zalo ZNS thành công! Chuyên viên hạ tầng SGO sẽ liên hệ hỗ trợ bạn xác thực Zalo OA và cung cấp token thử nghiệm."
       );
@@ -21,8 +32,10 @@ export default function ZnsForm() {
       setPhone("");
       setCompany("");
       setOaStatus("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message);
+    }
+    setLoading(false);
   };
 
   return (

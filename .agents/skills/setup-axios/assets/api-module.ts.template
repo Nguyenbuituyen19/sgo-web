@@ -1,0 +1,60 @@
+import { request, ApiResponse } from "@/shared/client";
+
+// Types mirror the backend's OpenAPI schemas exactly — same field names,
+// optional fields optional. Verify against /v3/api-docs, not memory.
+
+export interface ExampleItemResponse {
+  id: string;
+  name: string;
+  slug: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ExampleDetailResponse extends ExampleItemResponse {
+  content?: string;
+  seoMetadata?: { metaTitle?: string; metaDescription?: string; metaKeywords?: string };
+}
+
+interface ListQuery {
+  keyword?: string;
+  limit?: number;
+  offset?: number;
+}
+
+// Server-side correctness flags live HERE, not at call sites, so one
+// forgotten flag can never leak non-public records to a public page.
+const PUBLIC_ONLY = { publicOnly: true } as const;
+
+export const exampleApi = {
+  /** GET /api/v1/example — list */
+  getItems(query: ListQuery = {}): Promise<ApiResponse<ExampleItemResponse[]>> {
+    return request<ExampleItemResponse[]>({
+      method: "GET",
+      url: "/api/v1/example",
+      params: { ...PUBLIC_ONLY, ...query },
+    });
+  },
+
+  /**
+   * If the backend has no lookup-by-slug endpoint but the full list is small,
+   * resolve client-side and say why.
+   */
+  async getItemBySlugOrId(
+    slugOrId: string
+  ): Promise<ApiResponse<ExampleItemResponse | null>> {
+    const res = await this.getItems();
+    const found = res.data?.find((c) => c.slug === slugOrId || c.id === slugOrId) ?? null;
+    return { ...res, data: found };
+  },
+
+  /** GET /api/v1/example/{slug} — detail; encodeURIComponent all path params */
+  getDetailBySlug(slug: string): Promise<ApiResponse<ExampleDetailResponse | null>> {
+    return request<ExampleDetailResponse | null>({
+      method: "GET",
+      url: `/api/v1/example/${encodeURIComponent(slug)}`,
+      params: PUBLIC_ONLY,
+    });
+  },
+};
