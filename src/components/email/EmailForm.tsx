@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function EmailForm() {
   const [fullname, setFullname] = useState("");
@@ -10,21 +11,41 @@ export default function EmailForm() {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!fullname.trim() || !phone.trim()) {
+      alert("Vui lòng nhập đầy đủ Họ tên và Số điện thoại!");
+      return;
+    }
+
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "zns",
+      customerName: fullname,
+      phoneNumber: phone,
+      extraFields: {
+        domain: domain,
+        userRange: userRange,
+        note: note,
+      },
+    });
+
+    setLoading(false);
+
+    if (res.success) {
       alert(
-        "Cảm ơn quý khách! Chuyên viên Email SGO Việt Nam sẽ liên hệ hỗ trợ cấu hình bản ghi và cấp tài khoản dùng thử ngay."
+        "Cảm ơn quý khách! Chuyên viên Email SGO Việt Nam đã nhận được thông tin và sẽ liên hệ hỗ trợ cấu hình bản ghi và cấp tài khoản dùng thử ngay."
       );
       setFullname("");
       setPhone("");
       setDomain("");
       setUserRange("Dưới 10 nhân sự (Gói Basic)");
       setNote("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message || "Không thể gửi đăng ký, vui lòng thử lại sau.");
+    }
   };
 
   return (

@@ -1,4 +1,10 @@
+"use client";
+
+import { useProvisionPricing, parseFeatures } from "@/hooks/useProvisionPricing";
+
 export default function VrPricing() {
+  const { services, loading, error } = useProvisionPricing("vr360");
+
   return (
     <section id="bao-gia" className="py-20 bg-slate-100 px-4">
       <div className="max-w-7xl mx-auto">
@@ -49,167 +55,73 @@ export default function VrPricing() {
           </div>
         </div>
 
-        {/* Grid 4 Gói Dịch Vụ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-          {/* Gói 1 */}
-          <div className="hover-scale bg-white rounded-2xl p-8 border border-slate-200/60 shadow-sm flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2.5 py-1 rounded-md">
-                  Quy mô nhỏ
-                </span>
-                <h4 className="text-base font-bold text-slate-900 pt-2">
-                  Gói 8 - 15 Điểm
-                </h4>
-              </div>
-              <div className="text-2xl md:text-3xl font-black text-slate-900">
-                3.000.000 <span className="text-sm font-semibold text-blue-600">đ</span>
-              </div>
-              <p className="text-xs text-slate-500 font-light leading-relaxed">
-                Quét không gian phòng tiêu chuẩn, tối ưu cho homestay hoặc khách sạn mini.
-              </p>
-              <hr className="border-slate-100" />
-              <ul className="text-xs text-slate-600 space-y-2.5 font-light">
-                <li className="flex items-center gap-2">
-                  <i className="fa-solid fa-check text-emerald-500 shrink-0"></i>
-                  <span>Chụp quét 8-15 điểm chuẩn</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <i className="fa-solid fa-gift text-amber-500 shrink-0"></i>
-                  <span className="font-medium text-slate-900">
-                    Tặng Web &amp; Miễn phí trọn đời
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <a
-              href="#tu-van"
-              className="mt-8 block w-full text-center py-3 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 font-medium rounded-xl text-sm transition-all"
-            >
-              Đăng ký dùng
-            </a>
+        {/* Danh Sách Gói Dịch Vụ Thuần Động */}
+        {loading ? (
+          <div className="text-center py-12">
+            <i className="fa-solid fa-spinner fa-spin text-3xl text-blue-600"></i>
+            <p className="mt-4 text-slate-500 text-sm">Đang tải bảng giá VR360...</p>
           </div>
-
-          {/* Gói 2 */}
-          <div className="hover-scale bg-white rounded-2xl p-8 border border-slate-200/60 shadow-sm flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2.5 py-1 rounded-md">
-                  Quy mô vừa
-                </span>
-                <h4 className="text-base font-bold text-slate-900 pt-2">
-                  Gói 15 - 25 Điểm
-                </h4>
-              </div>
-              <div className="text-2xl md:text-3xl font-black text-slate-900">
-                5.000.000 <span className="text-sm font-semibold text-blue-600">đ</span>
-              </div>
-              <p className="text-xs text-slate-500 font-light leading-relaxed">
-                Quét chi tiết không gian khách sạn quy mô vừa và đầy đủ tiện ích cơ bản.
-              </p>
-              <hr className="border-slate-100" />
-              <ul className="text-xs text-slate-600 space-y-2.5 font-light">
-                <li className="flex items-center gap-2">
-                  <i className="fa-solid fa-check text-emerald-500 shrink-0"></i>
-                  <span>Quét chi tiết sạn quy mô vừa</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <i className="fa-solid fa-gift text-amber-500 shrink-0"></i>
-                  <span className="font-medium text-slate-900">
-                    Tặng Web &amp; Miễn phí trọn đời
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <a
-              href="#tu-van"
-              className="mt-8 block w-full text-center py-3 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 font-medium rounded-xl text-sm transition-all"
-            >
-              Đăng ký dùng
-            </a>
+        ) : error ? (
+          <div className="text-center py-12 text-red-500 text-sm">{error}</div>
+        ) : services.length === 0 ? (
+          <div className="text-center py-12 text-slate-500 text-sm">Đang cập nhật bảng giá dịch vụ VR360.</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+            {services.map((service, index) => {
+              const isPopular = index === 2;
+              const features = parseFeatures(service.featuresIncluded);
+              return (
+                <div
+                  key={service.id}
+                  className={`hover-scale bg-white rounded-2xl p-8 border ${
+                    isPopular
+                      ? "border-2 border-blue-600 shadow-md relative flex flex-col justify-between transform md:-translate-y-2"
+                      : "border-slate-200/60 shadow-sm flex flex-col justify-between"
+                  }`}
+                >
+                  {isPopular && (
+                    <span className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-xs">
+                      Khuyên dùng
+                    </span>
+                  )}
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2.5 py-1 rounded-md">
+                        Gói {index + 1}
+                      </span>
+                      <h4 className="text-base font-bold text-slate-900 pt-2">
+                        {service.name}
+                      </h4>
+                    </div>
+                    <div className="text-2xl md:text-3xl font-black text-slate-900">
+                      {service.price > 0 ? service.price.toLocaleString("vi-VN") : "Liên hệ"}{" "}
+                      {service.price > 0 && <span className="text-sm font-semibold text-blue-600">đ</span>}
+                    </div>
+                    <hr className="border-slate-100" />
+                    <ul className="text-xs text-slate-600 space-y-2.5 font-light">
+                      {features.map((feat, fIdx) => (
+                        <li key={fIdx} className="flex items-center gap-2">
+                          <i className="fa-solid fa-check text-emerald-500 shrink-0"></i>
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <a
+                    href="#tu-van"
+                    className={`mt-8 block w-full text-center py-3 font-medium rounded-xl text-sm transition-all ${
+                      isPopular
+                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200"
+                        : "bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700"
+                    }`}
+                  >
+                    Đăng ký dùng
+                  </a>
+                </div>
+              );
+            })}
           </div>
-
-          {/* Gói 3 */}
-          <div className="hover-scale bg-white rounded-2xl p-8 border-2 border-blue-600 shadow-md relative flex flex-col justify-between transform md:-translate-y-2">
-            <span className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full shadow-xs">
-              Khuyên dùng
-            </span>
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2.5 py-1 rounded-md">
-                  Quy mô lớn
-                </span>
-                <h4 className="text-base font-bold text-slate-900 pt-2">
-                  Gói 25 - 50 Điểm
-                </h4>
-              </div>
-              <div className="text-2xl md:text-3xl font-black text-blue-600">
-                10.000.000 <span className="text-sm font-semibold">đ</span>
-              </div>
-              <p className="text-xs text-slate-500 font-light leading-relaxed">
-                Phù hợp khách sạn quy mô lớn, nhiều tầng và khu dịch vụ tiện ích đi kèm.
-              </p>
-              <hr className="border-slate-100" />
-              <ul className="text-xs text-slate-600 space-y-2.5 font-light">
-                <li className="flex items-center gap-2">
-                  <i className="fa-solid fa-check text-emerald-500 shrink-0"></i>
-                  <span>Phù hợp khách sạn quy mô lớn</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <i className="fa-solid fa-gift text-amber-500 shrink-0"></i>
-                  <span className="font-medium text-slate-900">
-                    Tặng Web &amp; Miễn phí trọn đời
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <a
-              href="#tu-van"
-              className="mt-8 block w-full text-center py-3 bg-blue-600 text-white font-medium rounded-xl text-sm hover:bg-blue-700 transition-all shadow-md shadow-blue-200"
-            >
-              Đăng ký dùng
-            </a>
-          </div>
-
-          {/* Gói 4 */}
-          <div className="hover-scale bg-white rounded-2xl p-8 border border-slate-200/60 shadow-sm flex flex-col justify-between">
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2.5 py-1 rounded-md">
-                  Toàn diện
-                </span>
-                <h4 className="text-base font-bold text-slate-900 pt-2">
-                  Trọn Gói Khu
-                </h4>
-              </div>
-              <div className="text-2xl md:text-3xl font-black text-slate-900">
-                15.000.000 <span className="text-sm font-semibold text-blue-600">đ</span>
-              </div>
-              <p className="text-xs text-slate-500 font-light leading-relaxed">
-                Số hóa toàn bộ khu nghỉ dưỡng lớn, không giới hạn điểm quét cơ bản.
-              </p>
-              <hr className="border-slate-100" />
-              <ul className="text-xs text-slate-600 space-y-2.5 font-light">
-                <li className="flex items-center gap-2">
-                  <i className="fa-solid fa-check text-emerald-500 shrink-0"></i>
-                  <span>Số hóa toàn bộ khu nghỉ lớn</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <i className="fa-solid fa-gift text-amber-500 shrink-0"></i>
-                  <span className="font-medium text-slate-900">
-                    Tặng Web &amp; Miễn phí trọn đời
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <a
-              href="#tu-van"
-              className="mt-8 block w-full text-center py-3 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 font-medium rounded-xl text-sm transition-all"
-            >
-              Đăng ký dùng
-            </a>
-          </div>
-        </div>
+        )}
       </div>
     </section>
   );

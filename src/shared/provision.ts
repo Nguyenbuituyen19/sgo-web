@@ -118,11 +118,19 @@ export function buildProvisionRouteMap(
 
 
 export const provisionApi = {
-  /** GET /api/v1/provision — danh sách dịch vụ active (công khai). */
+  /** GET /api/v1/provision — danh sách dịch vụ (công khai). */
   getProvisions(): Promise<ApiResponse<ProvisionItem[]>> {
     return request<ProvisionItem[]>({
       method: "GET",
       url: "/api/v1/provision",
+    });
+  },
+
+  /** GET /api/v1/provision/active — danh sách dịch vụ active (công khai). */
+  getActiveProvisions(): Promise<ApiResponse<ProvisionItem[]>> {
+    return request<ProvisionItem[]>({
+      method: "GET",
+      url: "/api/v1/provision/active",
     });
   },
 
@@ -135,4 +143,4 @@ export const provisionApi = {
   },
 };
 
-export const { getProvisions, getProvisionDetail } = provisionApi;
+export const { getProvisions, getActiveProvisions, getProvisionDetail } = provisionApi;

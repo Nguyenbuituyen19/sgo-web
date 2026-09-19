@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function DataBiForm() {
   const [fullname, setFullname] = useState("");
@@ -10,11 +11,30 @@ export default function DataBiForm() {
   const [requirement, setRequirement] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!fullname.trim() || !phone.trim()) {
+      alert("Vui lòng nhập đầy đủ Họ tên và Số điện thoại!");
+      return;
+    }
+
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "erp",
+      customerName: fullname,
+      phoneNumber: phone,
+      email: email,
+      extraFields: {
+        company: company,
+        requirement: requirement,
+      },
+    });
+
+    setLoading(false);
+
+    if (res.success) {
       alert(
         "Cảm ơn bạn đã đăng ký! Chuyên viên SGO Data sẽ liên hệ tư vấn khảo sát hạ tầng dữ liệu cho doanh nghiệp của bạn trong thời gian sớm nhất."
       );
@@ -23,8 +43,9 @@ export default function DataBiForm() {
       setEmail("");
       setCompany("");
       setRequirement("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message || "Có lỗi xảy ra, vui lòng thử lại sau.");
+    }
   };
 
   return (

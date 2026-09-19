@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { submitConsultation } from "@/shared/client";
 
 export default function FaqContactSupport() {
   const [fullname, setFullname] = useState("");
@@ -8,19 +9,37 @@ export default function FaqContactSupport() {
   const [questionText, setQuestionText] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!fullname.trim() || !phone.trim() || !questionText.trim()) {
+      alert("Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Nội dung câu hỏi!");
+      return;
+    }
+
     setLoading(true);
 
-    setTimeout(() => {
+    const res = await submitConsultation({
+      provisionCode: "contact",
+      customerName: fullname,
+      phoneNumber: phone,
+      extraFields: {
+        question: questionText,
+      },
+    });
+
+    setLoading(false);
+
+    if (res.success) {
       alert(
         "Cảm ơn bạn đã gửi thắc mắc! Chuyên viên SGO Việt Nam đã nhận được tin nhắn và sẽ phản hồi qua Zalo/SĐT của bạn trong ít phút."
       );
       setFullname("");
       setPhone("");
       setQuestionText("");
-      setLoading(false);
-    }, 600);
+    } else {
+      alert(res.message || "Có lỗi xảy ra, vui lòng thử lại sau.");
+    }
   };
 
   return (
