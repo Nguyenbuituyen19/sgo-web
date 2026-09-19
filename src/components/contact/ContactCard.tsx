@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { submitConsultation } from "@/shared/client";
+import { companyInfoApi, CompanyInforResponse } from "@/shared/company-info";
 
 export default function ContactCard() {
   const [fullName, setFullName] = useState("");
@@ -19,40 +20,65 @@ export default function ContactCard() {
       return;
     }
 
+    const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!phoneRegex.test(phone)) {
+      alert("Sai định dạng số điện thoại");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    const res = await submitConsultation({
-      provisionCode: "contact",
-      customerName: fullName,
-      phoneNumber: phone,
-      email: email,
-      extraFields: {
-        subject: subject,
-        message: message,
-      },
-    });
+    try {
+      const res = await submitConsultation({
+        provisionCode: "contact",
+        customerName: fullName,
+        phoneNumber: phone,
+        email: email,
+        extraFields: {
+          subject: subject,
+          message: message,
+        },
+      });
 
-    setIsSubmitting(false);
+      setIsSubmitting(false);
 
-    if (res.success) {
-      setSubmitSuccess(true);
-      setFullName("");
-      setPhone("");
-      setEmail("");
-      setSubject("");
-      setMessage("");
-    } else {
-      alert(res.message);
+      if (res.success) {
+        setSubmitSuccess(true);
+        setFullName("");
+        setPhone("");
+        setEmail("");
+        setSubject("");
+        setMessage("");
+      } else {
+        alert(res.message || "Có lỗi xảy ra, vui lòng thử lại.");
+      }
+    } catch (error: any) {
+      setIsSubmitting(false);
+      alert(error.message || "Đã có lỗi xảy ra, vui lòng thử lại sau.");
     }
   };
 
+  const [companyInfo, setCompanyInfo] = useState<CompanyInforResponse | null>(null);
+
+  useEffect(() => {
+    companyInfoApi.getCompanyInfo().then((res) => {
+      if (res.success && res.data) {
+        setCompanyInfo(res.data);
+      }
+    }).catch(console.error);
+  }, []);
+
   const hanoiOffice = {
     name: "Trụ sở chính Hà Nội",
-    address: "Tầng 12 Tòa nhà Licogi 13, số 164 Khuất Duy Tiến, P.Thanh Xuân, TP. Hà Nội",
-    phone: "0246.29.27.089",
-    hotline: "0981.185.620",
-    email: "contact@sgodata.com",
-    taxId: "0108806638",
+    address: companyInfo?.address 
+      ? (Array.isArray(companyInfo.address) ? companyInfo.address[0] : String(companyInfo.address)) 
+      : "Tầng 12 Tòa nhà Licogi 13, số 164 Khuất Duy Tiến, P.Thanh Xuân, TP. Hà Nội",
+    phone: companyInfo?.phone || "0246.29.27.089",
+    hotline: companyInfo?.hotline || "0981.185.620",
+    email: companyInfo?.email || "contact@sgodata.com",
+    taxId: companyInfo?.taxCode?.startsWith("MST:") 
+      ? companyInfo.taxCode.replace("MST: ", "").replace("MST:", "").trim() 
+      : (companyInfo?.taxCode || "0108806638"),
   };
 
   return (
@@ -69,7 +95,7 @@ export default function ContactCard() {
               <span className="w-12 h-0.5 bg-amber-500 rounded-full"></span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
-              Công Ty Cổ Phần Công Nghệ Và Truyền Thông SGO Việt Nam
+              {companyInfo?.companyName || "Công Ty Cổ Phần Công Nghệ Và Truyền Thông SGO Việt Nam"}
             </h2>
           </div>
 

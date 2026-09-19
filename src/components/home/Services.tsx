@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { provisionApi } from "@/shared/provision";
 
 interface ServiceItem {
   id: string;
@@ -177,7 +178,32 @@ const SERVICES_DATA: ServiceItem[] = [
 
 export default function Services() {
   const [showAll, setShowAll] = useState(false);
-  const visibleServices = showAll ? SERVICES_DATA : SERVICES_DATA.slice(0, 6);
+  const [servicesData, setServicesData] = useState<ServiceItem[]>(SERVICES_DATA);
+
+  useEffect(() => {
+    provisionApi.getProvisions().then((res) => {
+      if (res.success && res.data) {
+        // Merge API data with static UI definitions based on service ID / Code
+        const apiMap = new Map(res.data.map((p) => [p.code, p]));
+        const merged = SERVICES_DATA.map((item) => {
+          const apiItem = apiMap.get(item.id);
+          if (apiItem) {
+            return {
+              ...item,
+              title: apiItem.name,
+              desc: apiItem.description || item.desc,
+            };
+          }
+          return item;
+        });
+        setServicesData(merged);
+      }
+    }).catch((err) => {
+      console.warn("Failed to fetch provisions:", err);
+    });
+  }, []);
+
+  const visibleServices = showAll ? servicesData : servicesData.slice(0, 6);
 
   return (
     <div className="mb-24">

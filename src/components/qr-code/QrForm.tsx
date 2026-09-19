@@ -21,8 +21,9 @@ export default function QrForm() {
   };
 
   const handlePhoneBlur = () => {
-    if (phone.length > 0 && phone.length !== 10) {
-      setPhoneError("Số điện thoại phải có chính xác 10 chữ số.");
+    const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+    if (phone.length > 0 && !phoneRegex.test(phone)) {
+      setPhoneError("Sai định dạng số điện thoại");
     } else {
       setPhoneError("");
     }
@@ -31,8 +32,9 @@ export default function QrForm() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (phone.length !== 10) {
-      setPhoneError("Số điện thoại phải có chính xác 10 chữ số.");
+    const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!phoneRegex.test(phone)) {
+      setPhoneError("Sai định dạng số điện thoại");
       return;
     }
 
@@ -123,9 +125,8 @@ export default function QrForm() {
                   maxLength={10}
                   placeholder="Ví dụ: 0912345678"
                   required
-                  className={`w-full pl-10 pr-4 py-3 bg-slate-50 border ${
-                    phoneError ? "border-red-500" : "border-slate-200"
-                  } rounded-xl text-xs font-medium focus:outline-none focus:border-blue-600 focus:bg-white transition-all text-slate-900`}
+                  className={`w-full pl-10 pr-4 py-3 bg-slate-50 border ${phoneError ? "border-red-500" : "border-slate-200"
+                    } rounded-xl text-xs font-medium focus:outline-none focus:border-blue-600 focus:bg-white transition-all text-slate-900`}
                 />
               </div>
               {phoneError && (

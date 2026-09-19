@@ -12,6 +12,13 @@ export default function TraceForm() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+    if (!phoneRegex.test(phone)) {
+      alert("Sai định dạng số điện thoại");
+      return;
+    }
+
     setLoading(true);
 
     const res = await submitConsultation({
