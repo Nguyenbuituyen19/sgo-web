@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useProvisionPricing } from "@/hooks/useProvisionPricing";
+
 interface ServerPackage {
   id: string;
   name: string;
@@ -69,6 +71,7 @@ function OsIcon({ distro, color }: { distro: string; color: string }) {
 }
 
 export default function CloudPricingTable() {
+  const { services, loading, error } = useProvisionPricing("ha-tang");
   const [activeTab, setActiveTab] = useState<"linux" | "turbo">("linux");
   const [selectedPackage, setSelectedPackage] = useState<ServerPackage | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);

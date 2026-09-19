@@ -75,14 +75,25 @@ export interface SubmitConsultationPayload {
 export async function submitConsultation(
   payload: SubmitConsultationPayload
 ): Promise<ApiResponse<unknown>> {
-  const { serviceType, provisionCode, ...rest } = payload;
-  const effectiveCode = provisionCode || serviceType;
+  const { serviceType, provisionCode, provisionId, customerName, phoneNumber, email, extraFields } = payload;
+  
+  const body: Record<string, unknown> = {
+    customerName: customerName ? customerName.trim() : "",
+    phoneNumber: phoneNumber ? phoneNumber.trim() : "",
+    email: email ? email.trim() : undefined,
+    extraFields: extraFields || {},
+  };
+
+  if (provisionId && String(provisionId).trim()) {
+    body.provisionId = String(provisionId).trim();
+  } else {
+    const effectiveCode = provisionCode || serviceType || "contact";
+    body.provisionCode = String(effectiveCode).trim();
+  }
+
   return request({
     method: "POST",
     url: "/api/v1/consultation",
-    data: {
-      ...rest,
-      provisionCode: effectiveCode,
-    },
+    data: body,
   });
 }
