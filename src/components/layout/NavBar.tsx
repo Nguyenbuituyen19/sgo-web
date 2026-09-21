@@ -47,16 +47,18 @@ export default function Navbar() {
     setIsOpen(false);
   };
 
-  const services = provisions.map((item) => {
-    const code = (item.code || "").toLowerCase();
-    return {
-      id: item.id,
-      title: item.name,
-      desc: item.description || "Giải pháp công nghệ tối ưu cho doanh nghiệp.",
-      icon: PROVISION_ICON_MAP[code] || "fa-solid fa-box",
-      href: getProvisionRoute(item.code),
-    };
-  });
+  const services = provisions
+    .filter((item) => item.code?.toLowerCase() !== "contact")
+    .map((item) => {
+      const code = (item.code || "").toLowerCase();
+      return {
+        id: item.id,
+        title: item.name,
+        desc: item.description || "Giải pháp công nghệ tối ưu cho doanh nghiệp.",
+        icon: PROVISION_ICON_MAP[code] || "fa-solid fa-box",
+        href: getProvisionRoute(item.code),
+      };
+    });
 
   return (
     <nav className="bg-white/95 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 shadow-sm w-full">

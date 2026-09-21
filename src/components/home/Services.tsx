@@ -140,7 +140,10 @@ export default function Services() {
       });
   }, []);
 
-  const visibleProvisions = showAll ? provisions : provisions.slice(0, 6);
+  const productProvisions = provisions.filter(
+    (item) => item.code?.toLowerCase() !== "contact"
+  );
+  const visibleProvisions = showAll ? productProvisions : productProvisions.slice(0, 6);
 
   if (loading) {
     return (
@@ -214,7 +217,7 @@ export default function Services() {
         })}
       </div>
 
-      {provisions.length > 6 && (
+      {productProvisions.length > 6 && (
         <div className="mt-12 text-center">
           <button
             type="button"

@@ -39,7 +39,10 @@ export async function request<T>(
   } catch (err) {
     const axiosError = err as AxiosError<{ code?: string; detail?: string; message?: string }>;
 
-    if (axiosError.response?.status === 404) {
+    if (
+      axiosError.response?.status === 404 ||
+      (axiosError.response?.status === 500 && config.url?.includes("/api/v1/provision-details/"))
+    ) {
       return { success: true, data: null };
     }
 
