@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export default function CheckoutModal({
   itemsCount,
   onClearCart,
 }: CheckoutModalProps) {
+  const { requireAuth } = useAuth();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -32,19 +34,22 @@ export default function CheckoutModal({
 
   const handleSubmitOrder = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!fullName || !phone || !email) {
       alert("Vui lòng điền đầy đủ Họ tên, Số điện thoại và Email!");
       return;
     }
 
-    setIsSubmitting(true);
-    setTimeout(() => {
-      const generatedCode = `SGO-${Math.floor(100000 + Math.random() * 900000)}`;
-      setOrderCode(generatedCode);
-      setIsSubmitting(false);
-      setOrderSuccess(true);
-      onClearCart();
-    }, 1200);
+    void requireAuth(() => {
+      setIsSubmitting(true);
+      setTimeout(() => {
+        const generatedCode = `SGO-${Math.floor(100000 + Math.random() * 900000)}`;
+        setOrderCode(generatedCode);
+        setIsSubmitting(false);
+        setOrderSuccess(true);
+        onClearCart();
+      }, 1200);
+    });
   };
 
   return (

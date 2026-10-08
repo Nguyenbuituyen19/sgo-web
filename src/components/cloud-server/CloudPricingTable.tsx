@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 import { useProvisionPricing } from "@/hooks/useProvisionPricing";
 
@@ -71,6 +72,7 @@ function OsIcon({ distro, color }: { distro: string; color: string }) {
 }
 
 export default function CloudPricingTable() {
+  const { requireAuth } = useAuth();
   const { services, loading, error } = useProvisionPricing("ha-tang");
   const [activeTab, setActiveTab] = useState<"linux" | "turbo">("linux");
   const [selectedPackage, setSelectedPackage] = useState<ServerPackage | null>(null);
@@ -216,21 +218,25 @@ export default function CloudPricingTable() {
   const osImages = osTab === "core" ? linuxCoreImages : linuxSoftwareImages;
 
   const handleOrder = (pkg: ServerPackage) => {
-    setSelectedPackage(pkg);
-    setSelectedOs(null);
-    setOsTab("core");
-    setIsModalOpen(true);
+    void requireAuth(() => {
+      setSelectedPackage(pkg);
+      setSelectedOs(null);
+      setOsTab("core");
+      setIsModalOpen(true);
+    });
   };
 
   const handleCustomConfig = (pkg: ServerPackage) => {
-    setSelectedPackage(pkg);
-    const ramVal  = parseInt(pkg.ram.match(/(\d+)/)?.[1]     ?? "1");
-    const cpuVal  = parseInt(pkg.cpu.match(/(\d+)/)?.[1]     ?? "1");
-    const stgVal  = parseInt(pkg.storage.match(/(\d+)/)?.[1] ?? "20");
-    setConfigRam(ramVal);  setBaseRam(ramVal);
-    setConfigCpu(cpuVal);  setBaseCpu(cpuVal);
-    setConfigStorage(stgVal); setBaseStorage(stgVal);
-    setIsConfigModalOpen(true);
+    void requireAuth(() => {
+      setSelectedPackage(pkg);
+      const ramVal = parseInt(pkg.ram.match(/(\d+)/)?.[1] ?? "1");
+      const cpuVal = parseInt(pkg.cpu.match(/(\d+)/)?.[1] ?? "1");
+      const stgVal = parseInt(pkg.storage.match(/(\d+)/)?.[1] ?? "20");
+      setConfigRam(ramVal); setBaseRam(ramVal);
+      setConfigCpu(cpuVal); setBaseCpu(cpuVal);
+      setConfigStorage(stgVal); setBaseStorage(stgVal);
+      setIsConfigModalOpen(true);
+    });
   };
 
   const handleConfirm = () => {
@@ -238,6 +244,7 @@ export default function CloudPricingTable() {
     const params = new URLSearchParams({
       package: selectedPackage.id,
       os: selectedOs.id,
+      selection: crypto.randomUUID(),
     });
     window.location.href = `/gio-hang?${params.toString()}`;
   };
@@ -249,6 +256,7 @@ export default function CloudPricingTable() {
       ram: String(configRam),
       cpu: String(configCpu),
       storage: String(configStorage),
+      selection: crypto.randomUUID(),
     });
     window.location.href = `/gio-hang?${params.toString()}`;
   };

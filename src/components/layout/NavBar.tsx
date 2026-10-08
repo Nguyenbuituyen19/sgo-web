@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import AuthButtons from "./AuthButtons";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { provisionApi, ProvisionItem, getProvisionRoute } from "@/shared/provision";
 
 const PROVISION_ICON_MAP: Record<string, string> = {
@@ -20,6 +22,9 @@ const PROVISION_ICON_MAP: Record<string, string> = {
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, isLoading, openAuth: showAuth, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const [provisions, setProvisions] = useState<ProvisionItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -45,6 +50,34 @@ export default function Navbar() {
 
   const closeMenu = () => {
     setIsOpen(false);
+  };
+
+  const openAuth = (mode: "login" | "register", trigger: HTMLButtonElement) => {
+    const focusTarget = trigger.closest("#sgodata-mobile-navigation") ? menuButtonRef.current ?? trigger : trigger;
+    closeMenu();
+    showAuth(mode, focusTarget);
+  };
+
+  const openLogin = (trigger: HTMLButtonElement) => openAuth("login", trigger);
+  const openRegister = (trigger: HTMLButtonElement) => openAuth("register", trigger);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try { await logout(); } finally { setIsLoggingOut(false); }
+  };
+
+  const accountActions = (mobile = false) => {
+    if (isLoading) return <span role="status" className="px-3 text-sm text-slate-500">Đang tải tài khoản...</span>;
+    if (!user) return <AuthButtons mobile={mobile} onLogin={openLogin} onRegister={openRegister} />;
+    return (
+      <div className={mobile ? "flex items-center justify-between gap-3" : "flex shrink-0 items-center gap-3"}>
+        <span title={user.email} className="max-w-40 truncate text-sm font-semibold text-slate-700">{user.displayName || user.email}</span>
+        <button type="button" onClick={handleLogout} disabled={isLoggingOut} className="inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-60">
+          {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+        </button>
+      </div>
+    );
   };
 
   const services = provisions
@@ -79,7 +112,7 @@ export default function Navbar() {
         </Link>
 
         {/* DESKTOP NAVIGATION LINKS */}
-        <div className="hidden md:flex items-center gap-8 lg:gap-11 text-xs font-bold text-slate-600">
+        <div className="hidden lg:flex items-center gap-5 xl:gap-7 text-xs font-bold text-slate-600">
           <Link href="/" className="hover:text-blue-600 transition-colors">
             TRANG CHỦ
           </Link>
@@ -143,18 +176,19 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* DESKTOP PHONE HOTLINE */}
-        <div className="hidden sm:flex items-center gap-3">
+        {/* DESKTOP ACCOUNT ACTIONS */}
+        <div className="hidden lg:flex shrink-0 items-center gap-3">
           <a
             href="tel:02462927089"
-            className="flex items-center gap-2 text-slate-700 font-bold text-xs sm:text-sm bg-slate-100 px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-200 transition-colors"
+            className="hidden xl:inline-flex items-center gap-2 whitespace-nowrap text-slate-700 font-bold text-xs bg-slate-100 px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-200 transition-colors"
           >
-            <i className="fa-solid fa-phone text-blue-600"></i> 0246.29.27.089
+            <i className="fa-solid fa-phone text-blue-600" aria-hidden="true"></i> 0246.29.27.089
           </a>
+          {accountActions()}
         </div>
 
         {/* MOBILE HAMBURGER BUTTON */}
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-2 lg:hidden">
           <a
             href="tel:02462927089"
             aria-label="Gọi điện"
@@ -163,8 +197,12 @@ export default function Navbar() {
             <i className="fa-solid fa-phone"></i>
           </a>
           <button
+            ref={menuButtonRef}
+            type="button"
             onClick={toggleMenu}
             aria-label="Menu"
+            aria-expanded={isOpen}
+            aria-controls="sgodata-mobile-navigation"
             className="w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl flex items-center justify-center text-lg transition-all border border-slate-200 cursor-pointer"
           >
             <i className={`fa-solid ${isOpen ? "fa-xmark" : "fa-bars"}`}></i>
@@ -174,7 +212,7 @@ export default function Navbar() {
 
       {/* MOBILE DROPDOWN MENU DRAWER */}
       {isOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 shadow-xl px-4 py-5 space-y-4 animate-in slide-in-from-top duration-200">
+        <div id="sgodata-mobile-navigation" className="lg:hidden bg-white border-b border-slate-200 shadow-xl px-4 py-5 space-y-4 animate-in slide-in-from-top duration-200">
           <div className="flex flex-col space-y-1">
             <Link
               href="/"
@@ -189,14 +227,14 @@ export default function Navbar() {
               <span>Giới Thiệu</span>
               <i className="fa-solid fa-user text-xs text-slate-400"></i>
             </Link>
-            <a
+            <Link
               href="/#dich-vu"
               onClick={closeMenu}
               className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-800 hover:bg-blue-50 hover:text-blue-600 transition-colors flex items-center justify-between"
             >
               <span>Dịch Vụ</span>
               <i className="fa-solid fa-box text-xs text-slate-400"></i>
-            </a>
+            </Link>
             <Link
               href="/tin-tuc"
               onClick={closeMenu}
@@ -221,6 +259,10 @@ export default function Navbar() {
               <span>Liên Hệ</span>
               <i className="fa-solid fa-address-book text-xs text-slate-400"></i>
             </a>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100">
+            {accountActions(true)}
           </div>
 
           {/* DỊCH VỤ TRUY CẬP NHANH TRÊN MOBILE */}

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useCallback, useMemo, useSyncExternalStore, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
 import Navbar from "@/components/layout/NavBar";
 import CartItemList, { CartItem } from "./CartItemList";
 import CartSuggestions from "./CartSuggestions";
@@ -72,89 +74,123 @@ const KNOWN_PACKAGES: Record<string, Partial<CartItem>> = {
   },
 };
 
+interface CartSnapshot {
+  items: CartItem[];
+  isLoaded: boolean;
+}
+
+const CART_STORAGE_KEY = "sgo_cart_items";
+const SERVER_CART_SNAPSHOT: CartSnapshot = { items: [], isLoaded: false };
+let cartSnapshot = SERVER_CART_SNAPSHOT;
+const cartListeners = new Set<() => void>();
+const consumedSelections = new Set<string>();
+
+function readSavedCart(): { items: CartItem[]; exists: boolean; available: boolean } {
+  let raw: string | null;
+  try { raw = localStorage.getItem(CART_STORAGE_KEY); } catch {
+    return { items: [], exists: false, available: false };
+  }
+  if (raw === null) return { items: [], exists: false, available: true };
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) return { items: parsed as CartItem[], exists: true, available: true };
+  } catch {
+    // Invalid saved data can be replaced without discarding an unavailable in-memory cart.
+  }
+  return { items: [], exists: false, available: true };
+}
+
+function updateCartItems(items: CartItem[], persist = true) {
+  cartSnapshot = { items, isLoaded: true };
+  if (persist) {
+    try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items)); } catch {
+      // The in-memory cart remains available for this browser session.
+    }
+  }
+  cartListeners.forEach((listener) => listener());
+}
+
+function purchaseFromQuery(query: string): CartItem | null {
+  const params = new URLSearchParams(query);
+  const packageId = params.get("package");
+  if (!packageId) return null;
+  const os = params.get("os") || "CentOS-Stream-8";
+  const ram = params.get("ram");
+  const cpu = params.get("cpu");
+  const storage = params.get("storage");
+  const selection = params.get("selection") || new URLSearchParams({ package: packageId, os, ram: ram || "", cpu: cpu || "", storage: storage || "" }).toString();
+  const packageData = KNOWN_PACKAGES[packageId];
+  const baseConfig = packageData?.config || {
+    cpu: "2 Core", ram: "4 GB", storage: "50 GB SSD", bandwidth: "200 Mbps", ip: "1 IPv4",
+  };
+  return {
+    id: "cart-item-" + packageId + "-" + selection,
+    type: "cloud-server",
+    title: packageData?.title || "Cloud Server",
+    subtitle: packageData?.subtitle || packageId,
+    regType: "new",
+    durationYears: 1,
+    durationLabel: "1 năm",
+    location: "TP. Hồ Chí Minh",
+    osImage: os,
+    originalPrice: packageData?.originalPrice || 1500000,
+    finalPrice: packageData?.finalPrice || 975000,
+    discountPercentage: 35,
+    config: {
+      ...baseConfig,
+      cpu: cpu ? cpu + " Core" : baseConfig.cpu,
+      ram: ram ? ram + " GB" : baseConfig.ram,
+      storage: storage ? storage + " GB SSD" : baseConfig.storage,
+    },
+    promoNote: "Ưu đãi SGO Data - Giảm 35% Cloud Server",
+  };
+}
+
+function handleCartStorage(event: StorageEvent) {
+  if (event.key !== CART_STORAGE_KEY && event.key !== null) return;
+  try { if (event.storageArea !== localStorage) return; } catch { return; }
+  const saved = readSavedCart();
+  if (saved.available) updateCartItems(saved.items, false);
+}
+
+function subscribeToCart(listener: () => void, query: string) {
+  const reconnecting = cartListeners.size === 0;
+  if (reconnecting) window.addEventListener("storage", handleCartStorage);
+  cartListeners.add(listener);
+
+  const purchase = purchaseFromQuery(query);
+  if (!cartSnapshot.isLoaded || reconnecting) {
+    const saved = readSavedCart();
+    if (!cartSnapshot.isLoaded) {
+      updateCartItems(saved.exists || purchase ? saved.items : [INITIAL_DEMO_ITEM]);
+    } else if (saved.available) {
+      updateCartItems(saved.items, false);
+    }
+  }
+  if (purchase && !consumedSelections.has(purchase.id)) {
+    consumedSelections.add(purchase.id);
+    if (!cartSnapshot.items.some((item) => item.id === purchase.id)) {
+      updateCartItems([purchase, ...cartSnapshot.items]);
+    }
+  }
+
+  return () => {
+    cartListeners.delete(listener);
+    if (cartListeners.size === 0) window.removeEventListener("storage", handleCartStorage);
+  };
+}
+
+function getCartSnapshot() { return cartSnapshot; }
+function getServerCartSnapshot() { return SERVER_CART_SNAPSHOT; }
+
 function CartPageContent() {
+  const { requireAuth } = useAuth();
   const searchParams = useSearchParams();
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const query = searchParams.toString();
+  const subscribe = useCallback((listener: () => void) => subscribeToCart(listener, query), [query]);
+  const { items, isLoaded } = useSyncExternalStore(subscribe, getCartSnapshot, getServerCartSnapshot);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>("TURBOTRONDOI40%");
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-
-  // Initialize cart from URL search params or localStorage or default item
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("sgo_cart_items");
-      let parsedItems: CartItem[] = saved ? JSON.parse(saved) : [];
-
-      // Check if URL parameters passed from pricing table
-      const pkgParam = searchParams.get("package");
-      const osParam = searchParams.get("os");
-      const ramParam = searchParams.get("ram");
-      const cpuParam = searchParams.get("cpu");
-      const stgParam = searchParams.get("storage");
-
-      if (pkgParam) {
-        const pkgData = KNOWN_PACKAGES[pkgParam] || {
-          title: "Cloud Server",
-          subtitle: pkgParam,
-          originalPrice: 1500000,
-          finalPrice: 975000,
-          config: {
-            cpu: cpuParam ? `${cpuParam} Core` : "2 Core",
-            ram: ramParam ? `${ramParam} GB` : "4 GB",
-            storage: stgParam ? `${stgParam} GB SSD` : "50 GB SSD",
-            bandwidth: "200 Mbps",
-            ip: "1 IPv4",
-          },
-        };
-
-        const newItem: CartItem = {
-          id: `cart-item-${pkgParam}-${Date.now()}`,
-          type: "cloud-server",
-          title: pkgData.title || "Cloud Server",
-          subtitle: pkgData.subtitle || pkgParam,
-          regType: "new",
-          durationYears: 1,
-          durationLabel: "1 năm",
-          location: "TP. Hồ Chí Minh",
-          osImage: osParam || "CentOS-Stream-8",
-          originalPrice: pkgData.originalPrice || 1174800,
-          finalPrice: pkgData.finalPrice || 763620,
-          discountPercentage: 35,
-          config: pkgData.config || {
-            cpu: "2 Core",
-            ram: "2 GB",
-            storage: "40 GB SSD",
-            bandwidth: "100 Mbps",
-            ip: "1 IPv4",
-          },
-          promoNote: "Ưu đãi SGO Data - Giảm 35% Cloud Server",
-        };
-
-        // Prepend or add new item
-        parsedItems = [newItem, ...parsedItems.filter((i) => i.id !== newItem.id)];
-      } else if (parsedItems.length === 0) {
-        // Default demo item matching screenshot
-        parsedItems = [INITIAL_DEMO_ITEM];
-      }
-
-      setItems(parsedItems);
-      localStorage.setItem("sgo_cart_items", JSON.stringify(parsedItems));
-    } catch {
-      setItems([INITIAL_DEMO_ITEM]);
-    } finally {
-      setIsLoaded(true);
-    }
-  }, [searchParams]);
-
-  // Persist items changes
-  const updateCartItems = (newItems: CartItem[]) => {
-    setItems(newItems);
-    try {
-      localStorage.setItem("sgo_cart_items", JSON.stringify(newItems));
-    } catch {
-      // ignore write error
-    }
-  };
 
   // Duration change handler
   const handleUpdateDuration = (
@@ -208,8 +244,10 @@ function CartPageContent() {
 
   // Add suggested service
   const handleAddSuggestedItem = (newItem: CartItem) => {
-    const updated = [newItem, ...items];
-    updateCartItems(updated);
+    void requireAuth(() => {
+      const updated = [newItem, ...getCartSnapshot().items];
+      updateCartItems(updated);
+    });
   };
 
   // Total price calculations
@@ -267,7 +305,7 @@ function CartPageContent() {
         {/* Page Title & Breadcrumb */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <a href="/" className="hover:text-blue-600">Trang chủ</a>
+            <Link href="/" className="hover:text-blue-600">Trang chủ</Link>
             <i className="fa-solid fa-chevron-right text-[9px] text-slate-400"></i>
             <span className="text-slate-900 font-semibold">Giỏ hàng của bạn</span>
           </div>
@@ -302,7 +340,7 @@ function CartPageContent() {
               appliedCoupon={appliedCoupon}
               onApplyCoupon={handleApplyCoupon}
               onRemoveCoupon={handleRemoveCoupon}
-              onProceedToCheckout={() => setIsCheckoutOpen(true)}
+              onProceedToCheckout={() => { if (items.length > 0) void requireAuth(() => setIsCheckoutOpen(true)); }}
             />
           </div>
         </div>

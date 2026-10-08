@@ -1,8 +1,10 @@
 "use client";
 
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useProvisionPricing, parseFeatures } from "@/hooks/useProvisionPricing";
 
 export default function LicenseProducts() {
+  const { requireAuth } = useAuth();
   const { services, loading, error } = useProvisionPricing("ban-quyen");
 
   return (
@@ -65,8 +67,11 @@ export default function LicenseProducts() {
                     </div>
                     <a
                       href="https://zalo.me"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        const destination = event.currentTarget.href;
+                        void requireAuth(() => window.location.assign(destination), event.currentTarget);
+                      }}
                       className={`w-full block text-center font-medium py-2.5 rounded-lg transition-colors text-sm ${
                         isPopular
                           ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"

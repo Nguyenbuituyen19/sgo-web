@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AuthProvider from "@/components/auth/AuthProvider";
 import { Geist, Geist_Mono, Lexend } from "next/font/google";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import ScrollRestorationFix from '@/components/layout/ScrollRestorationFix';
@@ -93,7 +94,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-slate-50 text-slate-800 font-sans antialiased min-h-full flex flex-col">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <ScrollToTop />
         <ScrollRestorationFix />
       </body>
