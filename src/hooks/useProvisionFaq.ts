@@ -1,75 +1,40 @@
-import { useState, useEffect } from "react";
-import { getProvisions, getProvisionDetail, ProvisionDetailFaq, ProvisionItem } from "@/shared/provision";
+"use client";
 
-export interface FaqItem {
-  id?: string;
-  q: string;
-  a: string;
+import { FaqItem, useProvisionContentByCode } from "./useProvisionContent";
+import { getDefaultFaqs } from "@/data/default-faqs";
+
+export type { FaqItem };
+
+export interface UseProvisionFaqResult {
+  faqs: FaqItem[];
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
+  /** True nếu đang dùng default FAQs (backend chưa có dữ liệu). */
+  isFallback: boolean;
 }
 
-export function useProvisionFaq(provisionCode: string) {
-  const [faqs, setFaqs] = useState<FaqItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+/**
+ * FAQ của một dịch vụ, tra theo code HOẶC slug.
+ *
+ * Ưu tiên lấy từ API backend (`provision_details`). Nếu backend chưa có dữ liệu
+ * (mảng rỗng hoặc lỗi), tự động fallback về danh sách FAQ mặc định được định nghĩa
+ * trong `src/data/default-faqs.ts` để đảm bảo UI luôn có nội dung hiển thị.
+ */
+export function useProvisionFaq(provisionCode: string): UseProvisionFaqResult {
+  const { content, loading, error, refresh } =
+    useProvisionContentByCode(provisionCode);
 
-  useEffect(() => {
-    let isMounted = true;
+  const apiFaqs = content?.faqs ?? [];
+  const defaultFaqs = getDefaultFaqs(provisionCode);
+  const isFallback = apiFaqs.length === 0 && defaultFaqs.length > 0;
+  const faqs = isFallback ? defaultFaqs : apiFaqs;
 
-    async function fetchFaqs() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const provisionsRes = await getProvisions();
-        let targetProvisionId: string | undefined;
-
-        if (provisionsRes.success && provisionsRes.data) {
-          const matched = provisionsRes.data.find(
-            (p: ProvisionItem) => p.code?.toLowerCase() === provisionCode.toLowerCase()
-          );
-          if (matched) {
-            targetProvisionId = matched.id;
-          }
-        }
-
-        let fetchedFaqs: FaqItem[] = [];
-
-        if (targetProvisionId) {
-          const detailRes = await getProvisionDetail(targetProvisionId);
-          if (detailRes.success && detailRes.data?.faqs) {
-            fetchedFaqs = detailRes.data.faqs
-              .filter((f: ProvisionDetailFaq) => !f.status || f.status === "ACTIVE")
-              .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
-              .map((f: ProvisionDetailFaq) => ({
-                id: f.id,
-                q: f.question,
-                a: f.answer,
-              }));
-          }
-        }
-
-        if (isMounted) {
-          setFaqs(fetchedFaqs);
-          setLoading(false);
-        }
-      } catch (err: unknown) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : "Không thể tải danh sách FAQ");
-          setLoading(false);
-        }
-      }
-    }
-
-    if (provisionCode) {
-      fetchFaqs();
-    } else {
-      setLoading(false);
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [provisionCode]);
-
-  return { faqs, loading, error };
+  return {
+    faqs,
+    loading,
+    error: isFallback ? null : error,
+    refresh,
+    isFallback,
+  };
 }

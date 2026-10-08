@@ -5,6 +5,12 @@ import { useProvisionPricing, parseFeatures } from "@/hooks/useProvisionPricing"
 export default function VrPricing() {
   const { services, loading, error } = useProvisionPricing("vr360");
 
+  // Chỉ hiển thị 8 gói đầu; các gói còn lại qua trang danh sách (nút "Xem thêm")
+  // — cùng pattern với PriceTable (maxVisible + viewMoreHref) mà Web/Hợp đồng đang dùng.
+  const MAX_VISIBLE = 8;
+  const visibleServices = services.slice(0, MAX_VISIBLE);
+  const hasMore = services.length > MAX_VISIBLE;
+
   return (
     <section id="bao-gia" className="py-20 bg-slate-100 px-4">
       <div className="max-w-7xl mx-auto">
@@ -66,8 +72,9 @@ export default function VrPricing() {
         ) : services.length === 0 ? (
           <div className="text-center py-12 text-slate-500 text-sm">Đang cập nhật bảng giá dịch vụ VR360.</div>
         ) : (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-            {services.map((service, index) => {
+            {visibleServices.map((service, index) => {
               const isPopular = index === 2;
               const features = parseFeatures(service.featuresIncluded);
               return (
@@ -121,6 +128,20 @@ export default function VrPricing() {
               );
             })}
           </div>
+
+          {/* Nút "Xem thêm" — style y hệt PriceTable đang dùng ở Web/Hợp đồng/Dịch vụ */}
+          {hasMore && (
+            <div className="flex justify-center mt-12">
+              <a
+                href="/dich-vu-vr360"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-colors shadow-md shadow-purple-500/10"
+              >
+                Xem thêm
+                <i className="fa-solid fa-arrow-right"></i>
+              </a>
+            </div>
+          )}
+          </>
         )}
       </div>
     </section>

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
-import { useProvisionPricing } from "@/hooks/useProvisionPricing";
+import { useProvisionPricing, ProvisionServiceItem } from "@/hooks/useProvisionPricing";
+import { useProvisions } from "@/hooks/useProvisions";
+import { findByCode, collectProvisionSubtreeIds } from "@/shared/provision";
 
 interface ServerPackage {
   id: string;
@@ -51,6 +53,60 @@ const linuxSoftwareImages: OsImage[] = [
   { id: "ubuntu-openclaw", name: "Ubuntu-24.04_OpenClaw", icon: "ubuntu", color: "#e95420" },
 ];
 
+function specNumber(specs: Record<string, unknown> | undefined, keys: string[]): number | undefined {
+  if (!specs) return undefined;
+  for (const key of keys) {
+    const raw = specs[key];
+    if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+    if (typeof raw === "string") {
+      const parsed = parseFloat(raw.replace(/[^\d.-]/g, ""));
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return undefined;
+}
+
+/** Bản test nội bộ (sku TEST-*) không hiển thị ra bảng giá công khai. */
+function isTestService(item: ProvisionServiceItem): boolean {
+  return (item.sku || "").toUpperCase().startsWith("TEST-");
+}
+
+function isActiveService(item: ProvisionServiceItem): boolean {
+  if (!item.status) return true;
+  return String(item.status).trim().toUpperCase() === "ACTIVE";
+}
+
+/**
+ * Map ProvisionServiceItem (backend) -> ServerPackage (UI bảng cloud-server).
+ * Backend: specifications = { cpu, ram, ssd, net }, price = giá tháng (VND).
+ */
+function toServerPackage(item: ProvisionServiceItem): ServerPackage {
+  const specs = item.specifications as Record<string, unknown> | undefined;
+  const cpu = specNumber(specs, ["cpu", "vCpu", "vcpu", "core"]) ?? 1;
+  const ram = specNumber(specs, ["ram", "memory"]) ?? 1;
+  const ssd = specNumber(specs, ["ssd", "storage", "disk"]) ?? 20;
+  const net = specNumber(specs, ["net", "network", "bandwidth", "speed"]) ?? 200;
+  const nvme = (item.sku || "").toUpperCase().includes("TURBO")
+    || item.name.toLowerCase().includes("turbo");
+  const price = item.price;
+  const original = item.originalPrice ?? item.price;
+  const discountBadge =
+    original > price
+      ? `Tiết kiệm ${Math.round((1 - price / original) * 100)}%`
+      : "";
+  return {
+    id: item.id,
+    name: item.name,
+    cpu: `${cpu} Core`,
+    ram: `${ram} GB`,
+    storage: `${ssd} GB ${nvme ? "NVMe" : "SSD"}`,
+    networkSpeed: net >= 1000 && net % 1000 === 0 ? `${net / 1000} Gbps` : `${net} Mbps`,
+    price,
+    originalPrice: original,
+    discountBadge,
+  };
+}
+
 function OsIcon({ distro, color }: { distro: string; color: string }) {
   switch (distro) {
     case "alma":
@@ -72,6 +128,7 @@ function OsIcon({ distro, color }: { distro: string; color: string }) {
 
 export default function CloudPricingTable() {
   const { services, loading, error } = useProvisionPricing("ha-tang");
+  const { provisions } = useProvisions();
   const [activeTab, setActiveTab] = useState<"linux" | "turbo">("linux");
   const [selectedPackage, setSelectedPackage] = useState<ServerPackage | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -87,130 +144,59 @@ export default function CloudPricingTable() {
   const [baseCpu, setBaseCpu] = useState(1);
   const [baseStorage, setBaseStorage] = useState(20);
 
-  // Unit prices for additional resources (đ/tháng per unit)
-  const RAM_UNIT_PRICE = 20000;
-  const CPU_UNIT_PRICE = 20000;
-  const STORAGE_UNIT_PRICE = 3000;
+  // Đơn giá nâng cấp (đ/tháng mỗi đơn vị) lấy từ specifications của gói.
+  // Giá trị mặc định; sẽ bị ghi đè bởi specifications của từng gói khi mở modal tuỳ chỉnh.
+  const [maxRam, setMaxRam] = useState(32);
+  const [maxCpu, setMaxCpu] = useState(16);
+  const [maxStorage, setMaxStorage] = useState(500);
+  const [ramPrice, setRamPrice] = useState(20000);
+  const [cpuPrice, setCpuPrice] = useState(20000);
+  const [storagePrice, setStoragePrice] = useState(3000);
 
-  // Linux Cloud Server packages (matching screenshot data)
-  const linuxPackages: ServerPackage[] = [
-    {
-      id: "linux-1",
-      name: "Cloud Server Linux 1",
-      cpu: "1 Core",
-      ram: "1 GB",
-      storage: "20 GB SSD",
-      networkSpeed: "200 Mbps",
-      price: 57850,
-      originalPrice: 89000,
-      discountBadge: "Tiết kiệm 35%",
-    },
-    {
-      id: "linux-2",
-      name: "Cloud Server Linux 2",
-      cpu: "1 Core",
-      ram: "2 GB",
-      storage: "20 GB SSD",
-      networkSpeed: "200 Mbps",
-      price: 70850,
-      originalPrice: 109000,
-      discountBadge: "Tiết kiệm 35%",
-    },
-    {
-      id: "linux-3",
-      name: "Cloud Server Linux 3",
-      cpu: "2 Core",
-      ram: "2 GB",
-      storage: "40 GB SSD",
-      networkSpeed: "200 Mbps",
-      price: 116350,
-      originalPrice: 179000,
-      discountBadge: "Tiết kiệm 35%",
-      isPopular: true,
-    },
-    {
-      id: "linux-4",
-      name: "Cloud Server Linux 4",
-      cpu: "2 Core",
-      ram: "4 GB",
-      storage: "60 GB SSD",
-      networkSpeed: "300 Mbps",
-      price: 181350,
-      originalPrice: 279000,
-      discountBadge: "Tiết kiệm 35%",
-    },
-    {
-      id: "linux-5",
-      name: "Cloud Server Linux 5",
-      cpu: "4 Core",
-      ram: "8 GB",
-      storage: "120 GB SSD",
-      networkSpeed: "400 Mbps",
-      price: 324350,
-      originalPrice: 499000,
-      discountBadge: "Tiết kiệm 35%",
-    },
-    {
-      id: "linux-6",
-      name: "Cloud Server Linux 6",
-      cpu: "8 Core",
-      ram: "16 GB",
-      storage: "240 GB SSD",
-      networkSpeed: "500 Mbps",
-      price: 649350,
-      originalPrice: 999000,
-      discountBadge: "Tiết kiệm 35%",
-    },
-  ];
+  // Dữ liệu thật: services của cây ha-tang, tách tab theo provision cha.
+  const visibleServices = useMemo(
+    () => services.filter((s) => isActiveService(s) && !isTestService(s)),
+    [services]
+  );
 
-  // Turbo Cloud Server NVMe packages
-  const turboPackages: ServerPackage[] = [
-    {
-      id: "turbo-1",
-      name: "Turbo Cloud Server 1",
-      cpu: "2 Core",
-      ram: "4 GB",
-      storage: "50 GB NVMe",
-      networkSpeed: "500 Mbps",
-      price: 195000,
-      originalPrice: 300000,
-      discountBadge: "Tiết kiệm 35%",
-    },
-    {
-      id: "turbo-2",
-      name: "Turbo Cloud Server 2",
-      cpu: "4 Core",
-      ram: "8 GB",
-      storage: "100 GB NVMe",
-      networkSpeed: "500 Mbps",
-      price: 357500,
-      originalPrice: 550000,
-      discountBadge: "Tiết kiệm 35%",
-      isPopular: true,
-    },
-    {
-      id: "turbo-3",
-      name: "Turbo Cloud Server 3",
-      cpu: "8 Core",
-      ram: "16 GB",
-      storage: "200 GB NVMe",
-      networkSpeed: "1 Gbps",
-      price: 682500,
-      originalPrice: 1050000,
-      discountBadge: "Tiết kiệm 35%",
-    },
-    {
-      id: "turbo-4",
-      name: "Turbo Cloud Server 4",
-      cpu: "16 Core",
-      ram: "32 GB",
-      storage: "400 GB NVMe",
-      networkSpeed: "1 Gbps",
-      price: 1293500,
-      originalPrice: 1990000,
-      discountBadge: "Tiết kiệm 35%",
-    },
-  ];
+  const idToCode = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of provisions) map.set(p.id, (p.code || "").toLowerCase());
+    return map;
+  }, [provisions]);
+
+  const linuxIds = useMemo(() => {
+    const linux = findByCode(provisions, "cloud-server-linux");
+    if (!linux) return new Set<string>();
+    return new Set(collectProvisionSubtreeIds(provisions, linux.id));
+  }, [provisions]);
+
+  const turboIds = useMemo(() => {
+    const turbo = findByCode(provisions, "cloud-server-turbo");
+    if (!turbo) return new Set<string>();
+    return new Set(collectProvisionSubtreeIds(provisions, turbo.id));
+  }, [provisions]);
+
+  // Tab Linux: gói gắn vào cloud-server-linux (SKU CS-LINUX-*).
+  // Tab Turbo: gói gắn vào cloud-server-turbo (SKU CS-TURBO-*).
+  const { linuxPackages, turboPackages } = useMemo(() => {
+    const linux: ServerPackage[] = [];
+    const turbo: ServerPackage[] = [];
+    for (const s of visibleServices) {
+      const pkg = toServerPackage(s);
+      const code = (s.sku || "").toUpperCase();
+      const inLinux = linuxIds.size > 0 ? linuxIds.has(s.provisionId) : code.includes("LINUX");
+      const inTurbo = turboIds.size > 0 ? turboIds.has(s.provisionId) : code.includes("TURBO");
+      if (inTurbo && !inLinux) turbo.push(pkg);
+      else if (inLinux) linux.push(pkg);
+      else {
+        const owner = idToCode.get(s.provisionId) || "";
+        if (owner.includes("turbo")) turbo.push(pkg);
+        else if (owner.includes("linux")) linux.push(pkg);
+      }
+    }
+    return { linuxPackages: linux, turboPackages: turbo };
+  }, [visibleServices, linuxIds, turboIds, idToCode]);
 
   const packagesToDisplay = activeTab === "linux" ? linuxPackages : turboPackages;
   const osImages = osTab === "core" ? linuxCoreImages : linuxSoftwareImages;
@@ -224,12 +210,32 @@ export default function CloudPricingTable() {
 
   const handleCustomConfig = (pkg: ServerPackage) => {
     setSelectedPackage(pkg);
+
+    // Find the corresponding service item to get specifications
+    const serviceItem = visibleServices.find(s => s.id === pkg.id);
+    const specs = serviceItem?.specifications as Record<string, unknown> | undefined;
+
     const ramVal  = parseInt(pkg.ram.match(/(\d+)/)?.[1]     ?? "1");
     const cpuVal  = parseInt(pkg.cpu.match(/(\d+)/)?.[1]     ?? "1");
     const stgVal  = parseInt(pkg.storage.match(/(\d+)/)?.[1] ?? "20");
+
     setConfigRam(ramVal);  setBaseRam(ramVal);
     setConfigCpu(cpuVal);  setBaseCpu(cpuVal);
     setConfigStorage(stgVal); setBaseStorage(stgVal);
+
+    // Đơn giá nâng cấp lấy từ specifications của gói (provision-service).
+    const serviceRam = specNumber(specs, ["ramPrice", "ram_price", "ram_price_per_unit"]);
+    const serviceCpu = specNumber(specs, ["cpuPrice", "cpu_price", "cpu_price_per_unit"]);
+    const serviceStorage = specNumber(specs, ["ssdPrice", "ssd_price", "ssd_price_per_unit", "storagePrice", "storage_price"]);
+    setRamPrice(serviceRam ?? 20000);
+    setCpuPrice(serviceCpu ?? 20000);
+    setStoragePrice(serviceStorage ?? 3000);
+
+    // Set limits and prices from backend specifications
+    setMaxRam(specNumber(specs, ["ramMax", "ram_max"]) ?? 10);
+    setMaxCpu(specNumber(specs, ["cpuMax", "cpu_max"]) ?? 20);
+    setMaxStorage(specNumber(specs, ["ssdMax", "ssd_max", "storageMax"]) ?? 200);
+
     setIsConfigModalOpen(true);
   };
 
@@ -237,6 +243,12 @@ export default function CloudPricingTable() {
     if (!selectedOs || !selectedPackage) return;
     const params = new URLSearchParams({
       package: selectedPackage.id,
+      name: selectedPackage.name,
+      price: String(selectedPackage.price),
+      cpu: selectedPackage.cpu,
+      ram: selectedPackage.ram,
+      storage: selectedPackage.storage,
+      bandwidth: selectedPackage.networkSpeed,
       os: selectedOs.id,
     });
     window.location.href = `/gio-hang?${params.toString()}`;
@@ -244,8 +256,17 @@ export default function CloudPricingTable() {
 
   const handleConfigConfirm = () => {
     if (!selectedPackage) return;
+    // Formula: basePrice + (ram x ramPrice) + (cpu x cpuPrice) + (ssd x ssdPrice),
+    // đơn giá lấy từ specifications của gói.
+    const configTotal =
+      selectedPackage.originalPrice +
+      Math.max(0, configRam - baseRam) * ramPrice +
+      Math.max(0, configCpu - baseCpu) * cpuPrice +
+      Math.max(0, configStorage - baseStorage) * storagePrice;
     const params = new URLSearchParams({
       package: selectedPackage.id,
+      name: selectedPackage.name,
+      price: String(configTotal),
       ram: String(configRam),
       cpu: String(configCpu),
       storage: String(configStorage),
@@ -335,7 +356,23 @@ export default function CloudPricingTable() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs md:text-sm">
-                {packagesToDisplay.map((pkg) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-500 text-sm">
+                      <i className="fa-solid fa-spinner fa-spin text-2xl text-blue-600"></i>
+                      <p className="mt-3">Đang tải bảng giá...</p>
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-red-500 text-sm">{error}</td>
+                  </tr>
+                ) : packagesToDisplay.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-500 text-sm">Đang cập nhật bảng giá.</td>
+                  </tr>
+                ) : (
+                  packagesToDisplay.map((pkg) => (
                   <tr
                     key={pkg.id}
                     className="hover:bg-slate-50/80 transition-colors group"
@@ -373,20 +410,26 @@ export default function CloudPricingTable() {
                       <div>
                         <div className="flex items-baseline gap-1">
                           <span className="text-base md:text-lg font-black text-rose-600 whitespace-nowrap">
-                            {formatCurrency(pkg.price)}
+                            {pkg.price > 0 ? formatCurrency(pkg.price) : "Liên hệ"}
                           </span>
-                          <span className="text-[11px] text-slate-400 font-normal">
-                            /tháng
-                          </span>
+                          {pkg.price > 0 && (
+                            <span className="text-[11px] text-slate-400 font-normal">
+                              /tháng
+                            </span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="line-through text-slate-400 text-xs whitespace-nowrap">
-                            {formatCurrency(pkg.originalPrice)}
-                          </span>
-                          <span className="bg-slate-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
-                            {pkg.discountBadge}
-                          </span>
-                        </div>
+                        {pkg.originalPrice > pkg.price && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="line-through text-slate-400 text-xs whitespace-nowrap">
+                              {formatCurrency(pkg.originalPrice)}
+                            </span>
+                            {pkg.discountBadge && (
+                              <span className="bg-slate-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                                {pkg.discountBadge}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
 
@@ -408,7 +451,8 @@ export default function CloudPricingTable() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -595,9 +639,9 @@ export default function CloudPricingTable() {
         const extraCpu     = Math.max(0, configCpu     - baseCpu);
         const extraStorage = Math.max(0, configStorage - baseStorage);
         const configTotal  = selectedPackage.originalPrice
-          + extraRam     * RAM_UNIT_PRICE
-          + extraCpu     * CPU_UNIT_PRICE
-          + extraStorage * STORAGE_UNIT_PRICE;
+          + extraRam     * ramPrice
+          + extraCpu     * cpuPrice
+          + extraStorage * storagePrice;
         return (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -639,7 +683,7 @@ export default function CloudPricingTable() {
                     <div className="text-xs font-bold text-slate-800">RAM (GB)</div>
                     <div className="text-[11px] font-semibold mt-0.5">
                       {extraRam > 0
-                        ? <span className="text-rose-500">+{formatCurrency(extraRam * RAM_UNIT_PRICE)} /tháng</span>
+                        ? <span className="text-rose-500">+{formatCurrency(extraRam * ramPrice)} /tháng</span>
                         : <span className="text-slate-400">Gói gốc: {baseRam} GB</span>
                       }
                     </div>
@@ -653,8 +697,9 @@ export default function CloudPricingTable() {
                     <span className="w-10 text-center text-sm font-bold text-slate-900">{configRam}</span>
                     <span className="text-xs text-slate-500 font-semibold">GB</span>
                     <button
-                      onClick={() => setConfigRam(Math.min(128, configRam + 1))}
-                      className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-blue-50 hover:border-blue-400 flex items-center justify-center text-slate-600 font-bold cursor-pointer transition-colors"
+                      onClick={() => setConfigRam(Math.min(maxRam, configRam + 1))}
+                      disabled={configRam >= maxRam}
+                      className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-blue-50 hover:border-blue-400 flex items-center justify-center text-slate-600 font-bold cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >+</button>
                   </div>
                 </div>
@@ -668,7 +713,7 @@ export default function CloudPricingTable() {
                     <div className="text-xs font-bold text-slate-800">CPU (Core)</div>
                     <div className="text-[11px] font-semibold mt-0.5">
                       {extraCpu > 0
-                        ? <span className="text-rose-500">+{formatCurrency(extraCpu * CPU_UNIT_PRICE)} /tháng</span>
+                        ? <span className="text-rose-500">+{formatCurrency(extraCpu * cpuPrice)} /tháng</span>
                         : <span className="text-slate-400">Gói gốc: {baseCpu} Core</span>
                       }
                     </div>
@@ -682,8 +727,9 @@ export default function CloudPricingTable() {
                     <span className="w-10 text-center text-sm font-bold text-slate-900">{configCpu}</span>
                     <span className="text-xs text-slate-500 font-semibold">Core</span>
                     <button
-                      onClick={() => setConfigCpu(Math.min(64, configCpu + 1))}
-                      className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-blue-50 hover:border-blue-400 flex items-center justify-center text-slate-600 font-bold cursor-pointer transition-colors"
+                      onClick={() => setConfigCpu(Math.min(maxCpu, configCpu + 1))}
+                      disabled={configCpu >= maxCpu}
+                      className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-blue-50 hover:border-blue-400 flex items-center justify-center text-slate-600 font-bold cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >+</button>
                   </div>
                 </div>
@@ -697,7 +743,7 @@ export default function CloudPricingTable() {
                     <div className="text-xs font-bold text-slate-800">Dung lượng (GB)</div>
                     <div className="text-[11px] font-semibold mt-0.5">
                       {extraStorage > 0
-                        ? <span className="text-rose-500">+{formatCurrency(extraStorage * STORAGE_UNIT_PRICE)} /tháng</span>
+                        ? <span className="text-rose-500">+{formatCurrency(extraStorage * storagePrice)} /tháng</span>
                         : <span className="text-slate-400">Gói gốc: {baseStorage} GB</span>
                       }
                     </div>
@@ -711,8 +757,9 @@ export default function CloudPricingTable() {
                     <span className="w-10 text-center text-sm font-bold text-slate-900">{configStorage}</span>
                     <span className="text-xs text-slate-500 font-semibold">GB</span>
                     <button
-                      onClick={() => setConfigStorage(Math.min(2000, configStorage + 10))}
-                      className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-blue-50 hover:border-blue-400 flex items-center justify-center text-slate-600 font-bold cursor-pointer transition-colors"
+                      onClick={() => setConfigStorage(Math.min(maxStorage, configStorage + 10))}
+                      disabled={configStorage >= maxStorage}
+                      className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-blue-50 hover:border-blue-400 flex items-center justify-center text-slate-600 font-bold cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     >+</button>
                   </div>
                 </div>

@@ -3,17 +3,22 @@
 import { useProvisionFaq } from "@/hooks/useProvisionFaq";
 import FaqAccordion, { FAQ_THEME_BLUE } from "@/components/shared/FaqAccordion";
 
-export default function CloudFaq() {
-  const { faqs, loading, error, isFallback } = useProvisionFaq("ha-tang");
+interface ServiceFaqProps {
+  /** Code hoặc slug của provision (chính là segment trên URL). */
+  code: string;
+}
+
+export default function ServiceFaq({ code }: ServiceFaqProps) {
+  const { faqs, loading, error, isFallback } = useProvisionFaq(code);
 
   return (
-    <section id="faq" className="py-20 max-w-7xl mx-auto px-4">
+    <section className="py-20 max-w-7xl mx-auto px-4">
       <div className="text-center mb-12">
         <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
-          Câu Hỏi Thường Gặp Về Cloud Server
+          Câu Hỏi Thường Gặp
         </h2>
         <p className="text-slate-500 text-xs md:text-sm mt-2 font-light">
-          Giải đáp các thắc mắc phổ biến trước khi đăng ký khởi tạo máy chủ tại SGO Việt Nam
+          Giải đáp những thắc mắc phổ biến trước khi bắt đầu triển khai dịch vụ.
         </p>
       </div>
 
@@ -23,8 +28,6 @@ export default function CloudFaq() {
         error={error}
         theme={FAQ_THEME_BLUE}
         isFallback={isFallback}
-        loadingText="Đang tải câu hỏi thường gặp..."
-        emptyText="Đang cập nhật câu hỏi thường gặp."
       />
     </section>
   );

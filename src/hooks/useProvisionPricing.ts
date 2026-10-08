@@ -1,129 +1,82 @@
-import { useState, useEffect } from "react";
-import { request } from "@/shared/client";
-import { getProvisions, ProvisionItem } from "@/shared/provision";
+"use client";
 
-export interface ProvisionServiceItem {
-  id: string;
-  provisionId: string;
-  name: string;
-  price: number;
-  featuresIncluded?: unknown;
-  status?: string;
+import { useCallback, useMemo } from "react";
+import {
+  ProvisionServiceItem,
+  RawProvisionService,
+  findByCodeOrSlug,
+  getProvisionServicesByProvision,
+  normalizeProvisionServices,
+  parseFeatures,
+} from "@/shared/provision";
+import { CACHE_TTL, cacheKey } from "@/lib/cache";
+import { useAsyncData } from "./useAsyncData";
+import { useProvisions } from "./useProvisions";
+
+export type { ProvisionServiceItem };
+export { parseFeatures };
+
+export interface UseProvisionPricingResult {
+  /** Bảng giá đã chuẩn hoá, sắp xếp theo displayOrder rồi giá tăng dần. */
+  services: ProvisionServiceItem[];
+  loading: boolean;
+  error: string | null;
+  refresh: () => void;
 }
 
-export function parseFeatures(featuresIncluded: unknown): string[] {
-  if (!featuresIncluded) return [];
+/**
+ * Bảng giá của một dịch vụ, tra theo code HOẶC slug.
+ *
+ * Sử dụng endpoint backend mới `/api/v1/provision-services/provision/{id}`:
+ * - Backend tự động kiểm tra type của provision
+ * - Nếu là "category": trả về tất cả service từ subtree (con/cháu) qua recursive CTE
+ * - Nếu là "service" hoặc "service-filter": chỉ trả service trực tiếp
+ *
+ * Frontend chỉ cần gọi 1 endpoint duy nhất, không cần xử lý logic phức tạp ở client.
+ */
+export function useProvisionPricing(
+  provisionCode: string
+): UseProvisionPricingResult {
+  const {
+    provisions,
+    loading: provisionsLoading,
+    error: provisionsError,
+  } = useProvisions();
 
-  if (Array.isArray(featuresIncluded)) {
-    return featuresIncluded.map((item) => String(item).trim()).filter(Boolean);
-  }
+  const target = useMemo(
+    () => (provisionCode ? findByCodeOrSlug(provisions, provisionCode) : undefined),
+    [provisions, provisionCode]
+  );
 
-  if (typeof featuresIncluded === "string") {
-    try {
-      const parsed = JSON.parse(featuresIncluded);
-      if (Array.isArray(parsed)) {
-        return parsed.map((item) => String(item).trim()).filter(Boolean);
-      }
-    } catch {
-      return featuresIncluded
-        .split(/[\n,]+/)
-        .map((item) => item.trim())
-        .filter(Boolean);
-    }
-  }
+  const loader = useCallback(async () => {
+    if (!target) return [];
 
-  if (typeof featuresIncluded === "object" && featuresIncluded !== null) {
-    return Object.values(featuresIncluded)
-      .map((item) => String(item).trim())
-      .filter(Boolean);
-  }
-
-  return [];
-}
-
-export function useProvisionPricing(provisionCode: string) {
-  const [services, setServices] = useState<ProvisionServiceItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchPricing() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // 1. Lấy danh sách provision để tìm ID của provision theo code
-        const provisionsRes = await getProvisions();
-        let targetProvisionId: string | undefined;
-
-        if (provisionsRes.success && provisionsRes.data) {
-          const matched = provisionsRes.data.find(
-            (p: ProvisionItem) => p.code?.toLowerCase() === provisionCode.toLowerCase()
-          );
-          if (matched) {
-            targetProvisionId = matched.id;
-          }
-        }
-
-        let fetchedServices: ProvisionServiceItem[] = [];
-
-        // 2. Tải dịch vụ theo provisionId nếu tìm thấy
-        if (targetProvisionId) {
-          const servicesRes = await request<ProvisionServiceItem[]>({
-            method: "GET",
-            url: `/api/v1/provision-services/provision/${targetProvisionId}`,
-          });
-
-          if (servicesRes.success && servicesRes.data) {
-            fetchedServices = servicesRes.data;
-          }
-        }
-
-        // 3. Fallback: Nếu chưa có dịch vụ theo provisionId, lấy toàn bộ danh sách dịch vụ
-        if (fetchedServices.length === 0) {
-          const allServicesRes = await request<ProvisionServiceItem[]>({
-            method: "GET",
-            url: "/api/v1/provision-services",
-          });
-
-          if (allServicesRes.success && allServicesRes.data) {
-            if (targetProvisionId) {
-              fetchedServices = allServicesRes.data.filter(
-                (s) => s.provisionId === targetProvisionId
-              );
-            }
-            if (fetchedServices.length === 0) {
-              fetchedServices = allServicesRes.data;
-            }
-          }
-        }
-
-        if (isMounted) {
-          setServices(fetchedServices);
-          setLoading(false);
-        }
-      } catch (err: unknown) {
-        if (isMounted) {
-          setError(
-            err instanceof Error ? err.message : "Không thể tải danh sách bảng giá"
-          );
-          setLoading(false);
-        }
-      }
+    const res = await getProvisionServicesByProvision(target.id);
+    if (!res.success || !res.data) {
+      throw new Error(res.message || "Không thể tải bảng giá dịch vụ");
     }
 
-    if (provisionCode) {
-      fetchPricing();
-    } else {
-      setLoading(false);
-    }
+    // Chuẩn hóa và sắp xếp danh sách service
+    return normalizeProvisionServices(res.data as RawProvisionService[]);
+  }, [target]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [provisionCode]);
+  // Chỉ gọi khi đã resolve được provision đích.
+  const key = target ? cacheKey.pricing(provisionCode) : null;
 
-  return { services, loading, error };
+  const {
+    data,
+    loading: servicesLoading,
+    error: servicesError,
+    refresh,
+  } = useAsyncData<ProvisionServiceItem[]>(key, loader, {
+    ttl: CACHE_TTL.SERVICES,
+    errorMessage: "Không thể tải bảng giá dịch vụ",
+  });
+
+  return {
+    services: data ?? [],
+    loading: provisionsLoading || servicesLoading,
+    error: provisionsError ?? servicesError,
+    refresh,
+  };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CartItem } from "./CartItemList";
 
 interface CartSuggestionsProps {
@@ -39,7 +40,7 @@ export default function CartSuggestions({ onAddSuggestedItem }: CartSuggestionsP
 
   const handleAddDomainToCart = (domain: DomainResult) => {
     const newItem: CartItem = {
-      id: `domain-${domain.tld}-${Date.now()}`,
+      id: `domain-${domain.tld}`,
       type: "domain",
       title: "Đăng ký tên miền",
       subtitle: domain.tld,
@@ -66,7 +67,7 @@ export default function CartSuggestions({ onAddSuggestedItem }: CartSuggestionsP
 
   const handleAddHostingToCart = () => {
     const newItem: CartItem = {
-      id: `hosting-${Date.now()}`,
+      id: "hosting-1",
       type: "hosting",
       title: "Web Hosting Pro 1",
       subtitle: "Tốc độ cao NVMe",
@@ -92,7 +93,7 @@ export default function CartSuggestions({ onAddSuggestedItem }: CartSuggestionsP
 
   const handleAddSslToCart = () => {
     const newItem: CartItem = {
-      id: `ssl-${Date.now()}`,
+      id: "ssl-1",
       type: "ssl",
       title: "Chứng chỉ SSL Sectigo DV",
       subtitle: "Bảo mật HTTPS",
@@ -118,7 +119,7 @@ export default function CartSuggestions({ onAddSuggestedItem }: CartSuggestionsP
 
   const handleAddEmailToCart = () => {
     const newItem: CartItem = {
-      id: `email-${Date.now()}`,
+      id: "email-1",
       type: "email",
       title: "Email Doanh Nghiệp Pro 5",
       subtitle: "5 Hộp thư tên miền",
@@ -319,12 +320,12 @@ export default function CartSuggestions({ onAddSuggestedItem }: CartSuggestionsP
               <p className="text-slate-600">
                 Hạ tầng Server riêng ảo hóa KVM mạnh mẽ, đáp ứng ứng dụng doanh nghiệp, thương mại điện tử và lưu trữ lớn.
               </p>
-              <a
+              <Link
                 href="/cloud-server#pricing-table"
                 className="inline-flex items-center gap-1 text-blue-600 font-bold hover:underline"
               >
                 Xem chi tiết bảng giá Cloud Server <i className="fa-solid fa-arrow-right text-[10px]"></i>
-              </a>
+              </Link>
             </div>
           )}
         </div>

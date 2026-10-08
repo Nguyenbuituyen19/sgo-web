@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { provisionApi, ProvisionItem, getProvisionRoute } from "@/shared/provision";
+import { getProvisionRoute, isCategoryProvision } from "@/shared/provision";
+import { useProvisions } from "@/hooks/useProvisions";
+import { usePrefetch } from "@/hooks/usePrefetch";
 
 interface ServiceMetadata {
   icon: string;
@@ -121,27 +123,11 @@ const DEFAULT_META: ServiceMetadata = {
 
 export default function Services() {
   const [showAll, setShowAll] = useState(false);
-  const [provisions, setProvisions] = useState<ProvisionItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    provisionApi
-      .getProvisions()
-      .then((res) => {
-        if (res.success && res.data) {
-          setProvisions(res.data);
-        }
-      })
-      .catch((err) => {
-        console.warn("Failed to fetch provisions:", err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+  const { provisions, loading } = useProvisions();
+  const { prefetchPricing } = usePrefetch();
 
   const productProvisions = provisions.filter(
-    (item) => item.code?.toLowerCase() !== "contact"
+    (item) => item.code?.toLowerCase() !== "contact" && isCategoryProvision(item)
   );
   const visibleProvisions = showAll ? productProvisions : productProvisions.slice(0, 6);
 
@@ -168,7 +154,7 @@ export default function Services() {
         {visibleProvisions.map((item) => {
           const code = (item.code || "").toLowerCase();
           const meta = SERVICE_META_MAP[code] || DEFAULT_META;
-          const route = getProvisionRoute(item.code);
+          const route = getProvisionRoute(item.code, item.slug);
 
           return (
             <div
@@ -206,6 +192,8 @@ export default function Services() {
               <div className="pt-8">
                 <Link
                   href={route}
+                  onMouseEnter={() => prefetchPricing(code)}
+                  onFocus={() => prefetchPricing(code)}
                   className={`inline-flex items-center justify-center w-full px-5 py-3 font-medium text-white ${meta.btnBg} ${meta.btnHover} rounded-xl transition-colors shadow-sm`}
                 >
                   {meta.linkText}{" "}

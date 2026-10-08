@@ -1,9 +1,10 @@
 "use client";
 
 import { useProvisionFaq } from "@/hooks/useProvisionFaq";
+import FaqAccordion, { FAQ_THEME_PURPLE } from "@/components/shared/FaqAccordion";
 
 export default function FAQ() {
-  const { faqs, loading, error } = useProvisionFaq("contact");
+  const { faqs, loading, error, isFallback } = useProvisionFaq("contact");
 
   return (
     <section id="ho-tro" className="max-w-4xl mx-auto space-y-8 mb-8">
@@ -20,35 +21,15 @@ export default function FAQ() {
         </p>
       </div>
 
-      {loading ? (
-        <div className="text-center py-10">
-          <i className="fa-solid fa-spinner fa-spin text-3xl text-indigo-600"></i>
-          <p className="mt-4 text-slate-500 text-sm">Đang tải câu hỏi thường gặp...</p>
-        </div>
-      ) : error ? (
-        <div className="text-center py-10 text-red-500 text-sm">{error}</div>
-      ) : faqs.length === 0 ? (
-        <div className="text-center py-10 text-slate-500 text-sm">Đang cập nhật câu hỏi thường gặp.</div>
-      ) : (
-        <div className="space-y-4">
-          {faqs.map((faq, idx) => (
-            <details
-              key={faq.id || idx}
-              className="group bg-white border border-slate-200/60 rounded-2xl p-5 [&_summary::-webkit-details-marker]:hidden cursor-pointer shadow-sm"
-            >
-              <summary className="flex items-center justify-between gap-4 font-semibold text-slate-900 list-none text-base">
-                <span>{faq.q}</span>
-                <span className="text-indigo-600 shrink-0 bg-indigo-50 w-7 h-7 flex items-center justify-center rounded-lg group-open:bg-indigo-600 group-open:text-white transition-colors duration-200">
-                  <i className="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
-                </span>
-              </summary>
-              <p className="mt-3 text-slate-500 text-sm leading-relaxed font-light pt-3 border-t border-slate-100">
-                {faq.a}
-              </p>
-            </details>
-          ))}
-        </div>
-      )}
+      <FaqAccordion
+        faqs={faqs}
+        loading={loading}
+        error={error}
+        theme={FAQ_THEME_PURPLE}
+        isFallback={isFallback}
+        loadingText="Đang tải câu hỏi thường gặp..."
+        emptyText="Đang cập nhật câu hỏi thường gặp."
+      />
     </section>
   );
 }

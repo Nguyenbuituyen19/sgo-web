@@ -1,9 +1,10 @@
 "use client";
 
 import { useProvisionFaq } from "@/hooks/useProvisionFaq";
+import FaqAccordion, { FAQ_THEME_PURPLE } from "@/components/shared/FaqAccordion";
 
 export default function DataBiFaq() {
-  const { faqs, loading, error } = useProvisionFaq("erp");
+  const { faqs, loading, error, isFallback } = useProvisionFaq("erp");
 
   return (
     <section id="faq" className="py-20 bg-slate-50 border-b border-slate-200">
@@ -18,35 +19,15 @@ export default function DataBiFaq() {
           </p>
         </div>
 
-        {loading ? (
-          <div className="text-center py-10">
-            <i className="fa-solid fa-spinner fa-spin text-3xl text-indigo-600"></i>
-            <p className="mt-4 text-slate-500 text-sm">Đang tải câu hỏi thường gặp...</p>
-          </div>
-        ) : error ? (
-          <div className="text-center py-10 text-red-500 text-sm">{error}</div>
-        ) : faqs.length === 0 ? (
-          <div className="text-center py-10 text-slate-500 text-sm">Đang cập nhật câu hỏi thường gặp.</div>
-        ) : (
-          <div className="space-y-4">
-            {faqs.map((faq, idx) => (
-              <details
-                key={faq.id || idx}
-                className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm cursor-pointer transition-all hover:border-indigo-300 [&_summary::-webkit-details-marker]:hidden"
-              >
-                <summary className="flex justify-between items-center font-bold text-slate-900 text-sm md:text-base list-none">
-                  <span>{faq.q}</span>
-                  <span className="text-indigo-600 shrink-0 bg-indigo-50 w-7 h-7 flex items-center justify-center rounded-lg group-open:bg-indigo-600 group-open:text-white transition-colors duration-200">
-                    <i className="fa-solid fa-chevron-down text-xs transition-transform duration-200"></i>
-                  </span>
-                </summary>
-                <p className="mt-3 text-xs md:text-sm text-slate-600 leading-relaxed font-light pt-3 border-t border-slate-100">
-                  {faq.a}
-                </p>
-              </details>
-            ))}
-          </div>
-        )}
+        <FaqAccordion
+          faqs={faqs}
+          loading={loading}
+          error={error}
+          theme={FAQ_THEME_PURPLE}
+          isFallback={isFallback}
+          loadingText="Đang tải câu hỏi thường gặp..."
+          emptyText="Đang cập nhật câu hỏi thường gặp."
+        />
       </div>
     </section>
   );

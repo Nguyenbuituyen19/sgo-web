@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 export interface CartItem {
   id: string;
@@ -15,6 +16,7 @@ export interface CartItem {
   originalPrice: number;
   finalPrice: number;
   discountPercentage: number;
+  moduleServiceId?: string; // ID của module service từ backend
   config: {
     cpu: string;
     ram: string;
@@ -83,12 +85,12 @@ export default function CartItemList({
           <p className="text-xs text-slate-500 mb-6">
             Hãy khám phá các gói Cloud Server, Hosting, Tên miền chất lượng cao từ SGO Việt Nam!
           </p>
-          <a
+          <Link
             href="/cloud-server#pricing-table"
             className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-6 py-3 rounded-xl transition-all shadow-md"
           >
             <i className="fa-solid fa-plus"></i> Khám phá dịch vụ ngay
-          </a>
+          </Link>
         </div>
       ) : (
         <div className="space-y-4">

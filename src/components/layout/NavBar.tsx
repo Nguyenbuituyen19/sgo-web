@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { provisionApi, ProvisionItem, getProvisionRoute } from "@/shared/provision";
+import { getProvisionRoute, isCategoryProvision } from "@/shared/provision";
+import { useProvisions } from "@/hooks/useProvisions";
+import { usePrefetch } from "@/hooks/usePrefetch";
 
 const PROVISION_ICON_MAP: Record<string, string> = {
   "qr-code": "fa-solid fa-qrcode",
@@ -20,24 +22,9 @@ const PROVISION_ICON_MAP: Record<string, string> = {
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [provisions, setProvisions] = useState<ProvisionItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    provisionApi
-      .getActiveProvisions()
-      .then((res) => {
-        if (res.success && res.data) {
-          setProvisions(res.data);
-        }
-      })
-      .catch((err) => {
-        console.warn("Failed to fetch active provisions:", err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+  // Menu chỉ hiển thị dịch vụ đang ACTIVE; dùng chung cache với các hook khác.
+  const { provisions, loading } = useProvisions({ activeOnly: true });
+  const { prefetchPricing } = usePrefetch();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -48,15 +35,16 @@ export default function Navbar() {
   };
 
   const services = provisions
-    .filter((item) => item.code?.toLowerCase() !== "contact")
+    .filter((item) => item.code?.toLowerCase() !== "contact" && isCategoryProvision(item))
     .map((item) => {
       const code = (item.code || "").toLowerCase();
       return {
         id: item.id,
+        code,
         title: item.name,
         desc: item.description || "Giải pháp công nghệ tối ưu cho doanh nghiệp.",
         icon: PROVISION_ICON_MAP[code] || "fa-solid fa-box",
-        href: getProvisionRoute(item.code),
+        href: getProvisionRoute(item.code, item.slug),
       };
     });
 
@@ -117,6 +105,8 @@ export default function Navbar() {
                     <Link
                       key={item.id}
                       href={item.href}
+                      onMouseEnter={() => prefetchPricing(item.code)}
+                      onFocus={() => prefetchPricing(item.code)}
                       className="block p-3 rounded-xl hover:bg-blue-50/60 border border-transparent hover:border-blue-100 transition-all group/item"
                     >
                       {item.icon && <i className={`${item.icon} text-blue-600 mr-2`}></i>}
@@ -235,6 +225,8 @@ export default function Navbar() {
                     key={item.id}
                     href={item.href}
                     onClick={closeMenu}
+                    onMouseEnter={() => prefetchPricing(item.code)}
+                    onFocus={() => prefetchPricing(item.code)}
                     className="p-2.5 bg-blue-50/60 text-slate-800 rounded-xl hover:bg-blue-100/60 transition-colors flex items-center gap-2 truncate"
                   >
                     <i className={`${item.icon} text-blue-600 shrink-0`}></i>

@@ -24,13 +24,54 @@ export interface ApiResponse<T> {
 }
 
 /**
+ * Single-flight cho GET: nhiều component mount cùng lúc gọi cùng một endpoint
+ * (ví dụ NavBar + Services + WebPricing đều cần /api/v1/provision) sẽ dùng chung
+ * đúng một HTTP request.
+ *
+ * Cố ý KHÔNG áp dụng cho POST/PUT/PATCH/DELETE: gộp hai mutation giống nhau sẽ
+ * làm mất một thao tác của người dùng.
+ */
+const inFlightGetRequests = new Map<string, Promise<ApiResponse<unknown>>>();
+
+function getRequestKey(config: AxiosRequestConfig): string | null {
+  const method = (config.method ?? "get").toUpperCase();
+  if (method !== "GET") return null;
+
+  const params = config.params
+    ? Object.entries(config.params as Record<string, unknown>)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}=${String(v)}`)
+        .join("&")
+    : "";
+
+  return `${method} ${config.url ?? ""} ${params}`;
+}
+
+/**
  * Backend trả về payload thuần (không bọc envelope) và lỗi theo RFC 7807
  * problem-json ({ code, detail, status }). Wrapper này chuẩn hoá cả hai:
  * - 2xx -> { success: true, data }
  * - 404 -> { success: true, data: null } (không coi "không tìm thấy" là lỗi hệ thống)
  * - khác -> { success: false, message }
  */
-export async function request<T>(
+export function request<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
+  const key = getRequestKey(config);
+  if (!key) return performRequest<T>(config);
+
+  const inFlight = inFlightGetRequests.get(key);
+  if (inFlight) return inFlight as Promise<ApiResponse<T>>;
+
+  const promise = performRequest<T>(config).finally(() => {
+    if (inFlightGetRequests.get(key) === promise) {
+      inFlightGetRequests.delete(key);
+    }
+  });
+
+  inFlightGetRequests.set(key, promise as Promise<ApiResponse<unknown>>);
+  return promise;
+}
+
+async function performRequest<T>(
   config: AxiosRequestConfig
 ): Promise<ApiResponse<T>> {
   try {
