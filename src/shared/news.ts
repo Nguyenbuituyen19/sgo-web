@@ -1,4 +1,4 @@
-import { request, ApiResponse } from "@/shared/client";
+import { request, ApiResponse, resolveApiAssetUrl } from "@/shared/client";
 
 export interface CategoryResponse {
   id: string;
@@ -49,6 +49,11 @@ interface ArticleQuery {
 
 const PUBLIC_ONLY = { publicOnly: true } as const;
 
+function resolveThumbnail<T extends { thumbnail?: string }>(article: T): T {
+  if (!article.thumbnail) return article;
+  return { ...article, thumbnail: resolveApiAssetUrl(article.thumbnail) };
+}
+
 export const newsApi = {
   /** GET /api/v1/news — danh sách chuyên mục */
   getCategories(limit = 100): Promise<ApiResponse<CategoryResponse[]>> {
@@ -73,35 +78,43 @@ export const newsApi = {
   },
 
   /** GET /api/v1/news/articles — tất cả bài viết, có filter */
-  getArticles(query: ArticleQuery = {}): Promise<ApiResponse<ArticleSummaryResponse[]>> {
-    return request<ArticleSummaryResponse[]>({
+  async getArticles(
+    query: ArticleQuery = {}
+  ): Promise<ApiResponse<ArticleSummaryResponse[]>> {
+    const res = await request<ArticleSummaryResponse[]>({
       method: "GET",
       url: "/api/v1/news/articles",
       params: { ...PUBLIC_ONLY, ...query },
     });
+    return { ...res, data: res.data?.map(resolveThumbnail) ?? null };
   },
 
   /** GET /api/v1/news/{categorySlug} — bài viết theo chuyên mục */
-  getArticlesByCategory(
+  async getArticlesByCategory(
     categorySlug: string,
     query: ArticleQuery = {}
   ): Promise<ApiResponse<ArticleSummaryResponse[]>> {
-    return request<ArticleSummaryResponse[]>({
+    const res = await request<ArticleSummaryResponse[]>({
       method: "GET",
       url: `/api/v1/news/${encodeURIComponent(categorySlug)}`,
       params: { ...PUBLIC_ONLY, ...query },
     });
+    return { ...res, data: res.data?.map(resolveThumbnail) ?? null };
   },
 
   /** GET /api/v1/news/{categorySlug}/{slug} — chi tiết bài viết */
-  getArticleBySlugs(
+  async getArticleBySlugs(
     categorySlug: string,
     slug: string
   ): Promise<ApiResponse<ArticleDetailResponse | null>> {
-    return request<ArticleDetailResponse | null>({
+    const res = await request<ArticleDetailResponse | null>({
       method: "GET",
       url: `/api/v1/news/${encodeURIComponent(categorySlug)}/${encodeURIComponent(slug)}`,
       params: PUBLIC_ONLY,
     });
+    return {
+      ...res,
+      data: res.data ? resolveThumbnail(res.data) : null,
+    };
   },
 };

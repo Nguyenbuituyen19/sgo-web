@@ -1,9 +1,14 @@
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
+  baseURL: API_BASE_URL,
   timeout: 10_000,
 });
+
+export function resolveApiAssetUrl(path: string): string {
+  return new URL(path, API_BASE_URL).toString();
+}
 
 // Loại bỏ các param undefined/rỗng trước khi gửi
 api.interceptors.request.use((config) => {
