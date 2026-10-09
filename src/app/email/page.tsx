@@ -100,7 +100,14 @@ export default function EmailDoanhNghiepPage() {
     <div className="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            ...jsonLd,
+            "@graph": jsonLd["@graph"].filter(
+              (entry) => entry["@type"] !== "FAQPage"
+            ),
+          }),
+        }}
       />
         <Navbar />
         <EmailHeader />

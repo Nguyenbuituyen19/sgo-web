@@ -1,10 +1,6 @@
 import { FaqItem } from "@/hooks/useProvisionContent";
 
-/**
- * Danh sách FAQ mặc định cho từng dịch vụ.
- * Dùng làm fallback khi backend chưa có dữ liệu trong provision_details.
- * Đảm bảo UI và JSON-LD luôn đồng bộ.
- */
+/** Nội dung FAQ tham chiếu đã được seed vào provision_details trên backend. */
 
 export const DEFAULT_FAQS: Record<string, FaqItem[]> = {
   web: [
@@ -245,12 +241,70 @@ export const DEFAULT_FAQS: Record<string, FaqItem[]> = {
       displayOrder: 4,
     },
   ],
+  "ha-tang": [
+    {
+      q: "Làm thế nào để chọn cấu hình Cloud Server phù hợp?",
+      a: "Cấu hình phù hợp phụ thuộc vào ứng dụng, lượng truy cập, dung lượng lưu trữ và yêu cầu vận hành của doanh nghiệp. SGO sẽ trao đổi nhu cầu cụ thể để đề xuất phương án và báo giá trước khi triển khai.",
+      displayOrder: 1,
+    },
+    {
+      q: "Doanh nghiệp có thể nâng cấp tài nguyên máy chủ khi nhu cầu tăng không?",
+      a: "Khả năng nâng cấp phụ thuộc vào cấu hình và phương án dịch vụ đang sử dụng. Vui lòng liên hệ SGO để kiểm tra lựa chọn phù hợp, chi phí và kế hoạch thực hiện.",
+      displayOrder: 2,
+    },
+    {
+      q: "SGO có hỗ trợ chuyển dữ liệu từ máy chủ hiện tại không?",
+      a: "Có thể khảo sát phương án chuyển dữ liệu dựa trên hệ thống, dung lượng và yêu cầu thời gian gián đoạn. Phạm vi công việc và kế hoạch sẽ được xác nhận trước khi thực hiện.",
+      displayOrder: 3,
+    },
+    {
+      q: "Thông tin về sao lưu và khôi phục dữ liệu được xác định như thế nào?",
+      a: "Chính sách sao lưu, thời gian lưu trữ và phương án khôi phục tùy theo cấu hình dịch vụ. SGO sẽ xác nhận các thông số này trong đề xuất và thỏa thuận dịch vụ cụ thể.",
+      displayOrder: 4,
+    },
+  ],
+  "software-licensing": [
+    {
+      q: "SGO cung cấp những loại bản quyền phần mềm nào?",
+      a: "Danh mục sản phẩm và phiên bản có thể thay đổi theo nhà cung cấp. Hãy gửi tên phần mềm, phiên bản và nhu cầu sử dụng để SGO kiểm tra khả năng cung cấp và điều kiện cấp phép.",
+      displayOrder: 1,
+    },
+    {
+      q: "Làm thế nào để xác minh bản quyền phần mềm sau khi mua?",
+      a: "Thông tin chứng từ, mã bản quyền và cách kích hoạt phụ thuộc vào chính sách của từng nhà phát hành. SGO sẽ cung cấp thông tin xác minh tương ứng với sản phẩm trong báo giá và hồ sơ bàn giao.",
+      displayOrder: 2,
+    },
+    {
+      q: "Bản quyền phần mềm có thời hạn hay dùng vĩnh viễn?",
+      a: "Thời hạn sử dụng phụ thuộc vào sản phẩm và loại giấy phép (thuê bao hoặc vĩnh viễn). Vui lòng kiểm tra thời hạn, phạm vi sử dụng và điều kiện gia hạn trong báo giá trước khi đặt mua.",
+      displayOrder: 3,
+    },
+    {
+      q: "SGO có hỗ trợ cài đặt và kích hoạt bản quyền không?",
+      a: "Phạm vi hỗ trợ cài đặt, kích hoạt và hướng dẫn sử dụng tùy theo sản phẩm và gói cung cấp. SGO sẽ xác nhận cụ thể các hạng mục hỗ trợ trước khi hoàn tất đơn hàng.",
+      displayOrder: 4,
+    },
+  ],
+  email: [
+    {
+      q: "Tôi có thể sử dụng email theo tên miền riêng của doanh nghiệp không?",
+      a: "Có thể thiết lập email theo tên miền riêng nếu doanh nghiệp sở hữu hoặc quản lý tên miền đó. SGO sẽ hướng dẫn các thông tin DNS cần cấu hình theo phương án dịch vụ đã chọn.",
+      displayOrder: 1,
+    },
+    {
+      q: "Chi phí email doanh nghiệp được tính như thế nào?",
+      a: "Chi phí phụ thuộc vào số lượng tài khoản, dung lượng, thời hạn và tính năng của gói dịch vụ. Vui lòng liên hệ SGO để nhận báo giá theo nhu cầu thực tế.",
+      displayOrder: 2,
+    },
+    {
+      q: "Email doanh nghiệp có thể sử dụng trên điện thoại và Outlook không?",
+      a: "Khả năng cấu hình trên ứng dụng bên ngoài phụ thuộc vào giao thức và thông số của gói email. SGO sẽ cung cấp hướng dẫn cấu hình phù hợp với dịch vụ đã đăng ký.",
+      displayOrder: 3,
+    },
+    {
+      q: "Có thể chuyển dữ liệu email từ nhà cung cấp cũ sang không?",
+      a: "Việc chuyển dữ liệu cần được khảo sát theo nhà cung cấp hiện tại, số lượng hộp thư và dung lượng. SGO sẽ trao đổi kế hoạch, phạm vi hỗ trợ và thời gian dự kiến trước khi thực hiện.",
+      displayOrder: 4,
+    },
+  ],
 };
-
-/**
- * Lấy danh sách FAQ mặc định theo code provision.
- * Trả về mảng rỗng nếu không có default cho code đó.
- */
-export function getDefaultFaqs(code: string): FaqItem[] {
-  return DEFAULT_FAQS[code] || [];
-}

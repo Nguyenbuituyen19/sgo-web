@@ -4,6 +4,7 @@ import ZnsHeader from "@/components/zns/ZnsHeader";
 import ZnsWhy from "@/components/zns/ZnsWhy";
 import ZnsUseCases from "@/components/zns/ZnsUseCases";
 import ZnsForm from "@/components/zns/ZnsForm";
+import ProvisionFaqSection from "@/components/shared/ProvisionFaqSection";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
@@ -91,6 +92,11 @@ export default function ZnsPage() {
         <ZnsHeader />
         <ZnsWhy />
         <ZnsUseCases />
+        <ProvisionFaqSection
+          provisionCode="zns"
+          title="Câu hỏi thường gặp về ZNS"
+          pageUrl="https://sgodata.com/zns.html"
+        />
         <ZnsForm />
       </main>
       <Footer />

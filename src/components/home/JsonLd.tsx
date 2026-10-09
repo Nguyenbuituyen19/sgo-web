@@ -105,7 +105,12 @@ export default function JsonLd() {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          ...jsonLd,
+          "@graph": jsonLd["@graph"].filter((entry) => entry["@type"] !== "FAQPage"),
+        }),
+      }}
     />
   );
 }

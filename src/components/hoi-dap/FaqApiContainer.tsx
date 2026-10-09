@@ -141,9 +141,11 @@ export default function FaqApiContainer({ searchTerm }: { searchTerm: string }) 
           <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center text-2xl mx-auto">
             <i className="fa-solid fa-circle-info font-bold"></i>
           </div>
-          <h3 className="text-lg font-bold text-slate-900">Chưa có câu hỏi nào</h3>
+          <h3 className="text-lg font-bold text-slate-900">
+            Đang cập nhật câu hỏi thường gặp.
+          </h3>
           <p className="text-slate-500 text-sm max-w-md mx-auto">
-            Backend chưa cung cấp dữ liệu FAQ. Vui lòng liên hệ quản trị viên để seed dữ liệu.
+            Nội dung giải đáp sẽ được bổ sung trong thời gian tới.
           </p>
         </div>
       </section>

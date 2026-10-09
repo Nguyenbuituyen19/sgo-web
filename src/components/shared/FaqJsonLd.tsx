@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useProvisionFaq } from "@/hooks/useProvisionFaq";
 import { generateFaqJsonLd } from "@/lib/faq-jsonld";
 
@@ -20,18 +19,15 @@ export default function FaqJsonLd({
   pageId = "faq",
 }: FaqJsonLdProps) {
   const { faqs } = useProvisionFaq(provisionCode);
-  const [jsonLd, setJsonLd] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (faqs.length > 0) {
-      const data = generateFaqJsonLd(faqs, baseUrl, pageId);
-      setJsonLd(JSON.stringify(data));
-    }
-  }, [faqs, baseUrl, pageId]);
-
-  if (!jsonLd) return null;
+  if (faqs.length === 0) return null;
 
   return (
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(generateFaqJsonLd(faqs, baseUrl, pageId)),
+      }}
+    />
   );
 }

@@ -4,6 +4,7 @@ import PosHeader from "@/components/pos/PosHeader";
 import PosFeatures from "@/components/pos/PosFeatures";
 import PosIndustries from "@/components/pos/PosIndustries";
 import PosForm from "@/components/pos/PosForm";
+import ProvisionFaqSection from "@/components/shared/ProvisionFaqSection";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
@@ -98,6 +99,11 @@ export default function PosPage() {
         <PosHeader />
         <PosFeatures />
         <PosIndustries />
+        <ProvisionFaqSection
+          provisionCode="pos"
+          title="Câu hỏi thường gặp về SGO POS"
+          pageUrl="https://sgodata.com/pos.html"
+        />
         <PosForm />
       </main>
       <Footer />

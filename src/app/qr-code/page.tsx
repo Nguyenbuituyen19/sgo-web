@@ -5,6 +5,7 @@ import QrWarning from "@/components/qr-code/QrWarning";
 import QrFeatures from "@/components/qr-code/QrFeatures";
 import QrComparison from "@/components/qr-code/QrComparison";
 import QrForm from "@/components/qr-code/QrForm";
+import ProvisionFaqSection from "@/components/shared/ProvisionFaqSection";
 import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
@@ -118,6 +119,11 @@ export default function QrCodePage() {
         <QrWarning />
         <QrFeatures />
         <QrComparison />
+        <ProvisionFaqSection
+          provisionCode="qr-code"
+          title="Câu hỏi thường gặp về QR Code"
+          pageUrl="https://sgodata.com/qr-code.html"
+        />
         <QrForm />
       </main>
       <Footer />
