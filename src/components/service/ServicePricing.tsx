@@ -33,7 +33,7 @@ export default function ServicePricing({ code }: ServicePricingProps) {
           ctaHref="#contact-form"
           loadingText="Đang tải bảng giá dịch vụ..."
           maxVisible={6}
-          viewMoreHref={`/dich-vu/${code}`}
+          catalogCategory={code}
           viewMoreLabel="Xem thêm"
         />
       </div>

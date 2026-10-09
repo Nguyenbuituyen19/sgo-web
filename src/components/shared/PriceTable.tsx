@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ProvisionServiceItem } from "@/shared/provision";
 
 /**
@@ -52,10 +53,10 @@ export interface PriceTableTheme {
 
 /** Preset tím — dùng cho trang Thiết kế Website. */
 export const PRICE_TABLE_THEME_PURPLE: PriceTableTheme = {
-  grid: "grid grid-cols-1 md:grid-cols-3 gap-8 items-start",
+  grid: "grid grid-cols-1 md:grid-cols-3 auto-rows-fr gap-8 items-stretch",
   card:
-    "price-card bg-white rounded-3xl p-8 border shadow-sm space-y-6 flex flex-col justify-between relative",
-  cardPopular: "max-w-sm border-2 border-purple-500 shadow-xl",
+    "price-card h-full bg-white rounded-3xl p-8 border shadow-sm space-y-6 flex flex-col justify-between relative",
+  cardPopular: "border-2 border-purple-500 shadow-xl",
   cardDefault: "border-slate-200/80",
   popularBadge:
     "absolute -top-3.5 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-[10px] uppercase font-bold tracking-wider px-3 py-1 rounded-full",
@@ -79,9 +80,9 @@ export const PRICE_TABLE_THEME_PURPLE: PriceTableTheme = {
 
 /** Preset xanh dương — dùng cho trang Hợp đồng điện tử. */
 export const PRICE_TABLE_THEME_BLUE: PriceTableTheme = {
-  grid: "grid grid-cols-1 md:grid-cols-3 gap-8 items-start",
+  grid: "grid grid-cols-1 md:grid-cols-3 auto-rows-fr gap-8 items-stretch",
   card:
-    "price-card bg-white rounded-3xl p-8 border space-y-6 flex flex-col justify-between relative",
+    "price-card h-full bg-white rounded-3xl p-8 border space-y-6 flex flex-col justify-between relative",
   cardPopular: "border-2 border-blue-500 shadow-xl",
   cardDefault: "border-slate-200 shadow-sm",
   popularBadge:
@@ -118,8 +119,8 @@ export interface PriceTableProps {
   emptyText?: string;
   /** Số lượng dịch vụ tối đa hiển thị ban đầu. Nếu không đặt, hiển thị tất cả. */
   maxVisible?: number;
-  /** URL hoặc đường dẫn để chuyển hướng khi click "Xem thêm". */
-  viewMoreHref?: string;
+  /** Mã/slug provision để chọn sẵn danh mục tương ứng trong trang danh mục. */
+  catalogCategory?: string;
   /** Nhãn cho nút "Xem thêm". Mặc định là "Xem thêm". */
   viewMoreLabel?: string;
 }
@@ -135,7 +136,7 @@ export default function PriceTable({
   loadingText = "Đang tải bảng giá...",
   emptyText = "Đang cập nhật bảng giá.",
   maxVisible,
-  viewMoreHref,
+  catalogCategory,
   viewMoreLabel = "Xem thêm",
 }: PriceTableProps) {
   if (loading) {
@@ -206,15 +207,19 @@ export default function PriceTable({
         })}
       </div>
 
-      {hasMore && viewMoreHref && (
+      {hasMore && (
         <div className="flex justify-center mt-12">
-          <a
-            href={viewMoreHref}
+          <Link
+            href={
+              catalogCategory
+                ? `/danh-muc-dich-vu?category=${encodeURIComponent(catalogCategory)}`
+                : "/danh-muc-dich-vu"
+            }
             className="inline-flex items-center gap-2 px-8 py-3 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition-colors shadow-md shadow-purple-500/10"
           >
             {viewMoreLabel}
             <i className="fa-solid fa-arrow-right"></i>
-          </a>
+          </Link>
         </div>
       )}
     </>

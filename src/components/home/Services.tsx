@@ -122,14 +122,19 @@ const DEFAULT_META: ServiceMetadata = {
 };
 
 export default function Services() {
-  const [showAll, setShowAll] = useState(false);
   const { provisions, loading } = useProvisions();
   const { prefetchPricing } = usePrefetch();
+  const [showAllProvisions, setShowAllProvisions] = useState(false);
 
   const productProvisions = provisions.filter(
-    (item) => item.code?.toLowerCase() !== "contact" && isCategoryProvision(item)
+    (item) =>
+      item.code?.toLowerCase() !== "contact" &&
+      item.type?.trim().toLowerCase() === "category" &&
+      isCategoryProvision(item)
   );
-  const visibleProvisions = showAll ? productProvisions : productProvisions.slice(0, 6);
+  const visibleProvisions = showAllProvisions
+    ? productProvisions
+    : productProvisions.slice(0, 6);
 
   if (loading) {
     return (
@@ -209,14 +214,17 @@ export default function Services() {
         <div className="mt-12 text-center">
           <button
             type="button"
-            onClick={() => setShowAll((prev) => !prev)}
+            aria-expanded={showAllProvisions}
+            aria-controls="dich-vu"
+            onClick={() => setShowAllProvisions((current) => !current)}
             className="inline-flex items-center gap-2 px-6 py-3 font-semibold text-slate-700 bg-white hover:bg-slate-50 rounded-xl transition-all shadow-sm active:scale-95 cursor-pointer"
           >
-            <span>{showAll ? "Thu gọn" : "Xem thêm"}</span>
+            <span>{showAllProvisions ? "Thu gọn" : "Xem thêm"}</span>
             <i
-              className={`fa-solid fa-chevron-down text-sm transition-transform duration-200 ${
-                showAll ? "rotate-180" : ""
-              }`}
+              className={`fa-solid ${
+                showAllProvisions ? "fa-arrow-up" : "fa-arrow-down"
+              } text-sm`}
+              aria-hidden="true"
             ></i>
           </button>
         </div>

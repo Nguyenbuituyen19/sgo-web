@@ -31,7 +31,7 @@ export default function WebPricing({ provisionCode = "web" }: WebPricingProps) {
         theme={PRICE_TABLE_THEME_PURPLE}
         ctaHref="#contact-form"
         maxVisible={6}
-        viewMoreHref="/dich-vu-thiet-ke-web"
+        catalogCategory={provisionCode}
         viewMoreLabel="Xem thêm"
       />
     </section>

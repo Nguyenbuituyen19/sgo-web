@@ -37,7 +37,7 @@ export default function ContractPricing({
           loadingText="Đang tải bảng giá hợp đồng điện tử..."
           emptyText="Đang cập nhật bảng giá Hợp đồng điện tử."
           maxVisible={6}
-          viewMoreHref="/dich-vu-hop-dong-dien-tu"
+          catalogCategory={provisionCode}
           viewMoreLabel="Xem thêm"
         />
       </div>
